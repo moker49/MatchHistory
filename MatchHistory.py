@@ -1,4 +1,3 @@
-@@ -0,0 +1,85 @@
 from riotwatcher import LolWatcher, ApiError
 import json, pypyodbc as odbc
 
