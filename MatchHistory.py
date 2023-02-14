@@ -1,12 +1,12 @@
-from riotwatcher import LolWatcher, ApiError
-import json, pypyodbc as odbc
+from riotwatcher import LolWatcher
+import time, json, pypyodbc as odbc
 
 
 # CONFIG 
 config = {}
-conn_string = ''
 with open('config.json') as json_file:
     config = json.load(json_file)
+interval = config['interval']
 
 # LOR WATCHER
 api_key = config['riot_api_key']
@@ -36,39 +36,84 @@ with odbc.connect(conn_string) as con:
 
     for matchId in matchIds:
         print(f'getting match details {matchId} ...')
-        lastMatch = lol_watcher.match.by_id(region, matchId)
-
-        my_index = lastMatch['metadata']['participants'].index(puuid)
-        metadata = lastMatch['metadata']
-        info = lastMatch['info'];
-        me = info['participants'][my_index]
-
+        currentMatch = lol_watcher.match.by_id(region, matchId)
         print(f'match {matchId} received')
-        myMatch = {
-            'matchId': matchId,
-            'gameMode': f"{info['gameMode']}",
-            'champion': f"{me['championName']}",
-            'date': info['gameStartTimestamp'],
-            'durationSec': info['gameDuration'],
-            'win': f"{me['win']}",
-            'kills': me['kills'],
-            'deaths': me['deaths'],
-            'assists': me['assists'],
-            'doubleKills': me['doubleKills'],
-            'tripleKills': me['tripleKills'],
-            'quadraKills': me['quadraKills'],
-            'pentaKills': me['pentaKills'],
-        }
-        # print(json.dumps(myMatch, sort_keys=False, indent=4))
+        info = currentMatch['info'];
 
-        procParamKeys = '@' + ' = ?, @'.join(myMatch.keys()) + ' = ?'
-        procParamValues = tuple([i for i in myMatch.values()])
-        SQL = f'EXEC {insertProc} {procParamKeys};'
+        for player in info['participants']:
 
-        print(f'executing insert: {matchId}...')
-        cursor.execute(SQL, procParamValues)
-        print(f'insert done: {matchId}\n')
+            raw ={
+                'win': player['win'],
+                'firstBlood': player['firstBloodKill'],
+                'firstBloodAssist': player['firstBloodAssist'],
+                'firstTower': player['firstTowerKill'],
+                'firstTowerAssist': player['firstTowerAssist'],
+                'surrender' : player['gameEndedInSurrender'],
+                'earlySurrender' : player['gameEndedInEarlySurrender'],
+            }
 
+            proccessed = {
+                'win': f"{raw['win']}",
+                'firstBlood': 'True' if raw['firstBlood'] else 'Assist' if raw['firstBloodAssist'] else 'False',
+                'firstTower': 'True' if raw['firstTower'] else 'Assist' if raw['firstTowerAssist'] else 'False',
+                'surrender': 'True' if raw['surrender'] else 'Early' if raw['earlySurrender'] else 'False',
+            }
+
+            playerMatch = {
+                'matchId': matchId,
+                'player': player['summonerName'],
+                'gameMode': info['gameMode'],
+                'champion': player['championName'],
+                'date': info['gameStartTimestamp'],
+                'durationSec': info['gameDuration'],
+                'win': proccessed['win'],
+                'kills': player['kills'],
+                'deaths': player['deaths'],
+                'assists': player['assists'],
+                'doubleKills': player['doubleKills'],
+                'tripleKills': player['tripleKills'],
+                'quadraKills': player['quadraKills'],
+                'pentaKills': player['pentaKills'],
+                # 'legendaryKills': player['unrealKills'],
+                # 'damageToChamps': player['totalDamageDealtToChampions'],
+                # 'damageToBuildings': player['damageDealtToBuildings'],
+                # 'damageTaken': player['totalDamageTaken'],
+                # 'damageMitigated': player['damageSelfMitigated'],
+                # 'gold': player['goldEarned'],
+                # 'creepScore': player['totalMinionsKilled'],
+                # 'dragons': player['dragonKills'],
+                # 'barons': player['baronKills'],
+                # 'level': player['champLevel'],
+                # 'firstBlood': proccessed['firstBlood'],
+                # 'firstTower': proccessed['firstTower'],
+                # 'surrender': proccessed['surrender'],
+                # 'timeCCOthers': player['timeCCingOthers'],
+                # 'timeDead': player['totalTimeSpentDead'],
+                # 'crit': player['largestCriticalStrike'],
+                # 'spell1Cast': player['spell1Casts'],
+                # 'spell2Cast': player['spell2Casts'],
+                # 'spell3Cast': player['spell3Casts'],
+                # 'spell4Cast': player['spell4Casts'],
+                # 'summ1Cast': player['summoner1Casts'],
+                # 'summ2Cast': player['summoner2Casts'],
+                # 'summ1Id': player['summoner1Id'],
+                # 'summ2Id': player['summoner2Id'],
+                # 'wardsPlaced': player['wardsPlaced'],
+                # 'wardsKilled': player['wardsKilled'],
+                'puuid': player['puuid'],
+            }
+            champName = player['championName']
+            # print(playerMatch)
+
+            procParamKeys = '@' + ' = ?, @'.join(playerMatch.keys()) + ' = ?'
+            procParamValues = tuple([i for i in playerMatch.values()])
+            SQL = f'EXEC {insertProc} {procParamKeys};'
+
+            cursor.execute(SQL, procParamValues)
+            print(f'inserted: {matchId}/{champName}...')
+       
+        print(f'waiting: {interval}s...\n')
+        time.sleep(interval)
     while cursor.nextset(): pass
     cursor.commit()
 
