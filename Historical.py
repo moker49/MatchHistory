@@ -52,8 +52,13 @@ with odbc.connect(conn_string) as con:
             match_current_count = 0
             match_total_count = (epoch_count*100)+match_current_count
 
-            print('getting matches...')
-            matchIds = lol_watcher.match.matchlist_by_puuid(region, puuid, start=match_total_count, count=match_count)
+            try:
+                matchIds = lol_watcher.match.matchlist_by_puuid(region, puuid, start=match_total_count, count=match_count)
+            except ApiError:
+                print(f'{player_name} epoch:{epoch_count} error\n')
+                time.sleep(call_interval)
+                continue
+
             print('matches received\n')
             print(f'waiting: {call_interval}s...\n')
             time.sleep(call_interval)
@@ -68,6 +73,8 @@ with odbc.connect(conn_string) as con:
                     currentMatch = lol_watcher.match.by_id(region, matchId)
                 except ApiError:
                     print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId} not found\n')
+                    SQL = f'EXEC {insertProc} @MATCH_ID = ?, @PLAYER = ?, @GAME_MDOE = ?, @CHAMPION = ?, @DATE = ?, @DURATION = ?, @WIN = ?, @KILLS = ?, @DEATHS = ?, @ASSISTS = ?, @DOUBLE_KILLS = ?, @TRIPLE_KILLS = ?, @QUADRA_KILLS = ?, @PENTA_KILLS = ?, @LEGENDARY_KILLS = ?, @DMG_TO_CHAMPS = ?, @DMG_TO_STRUCT = ?, @DMG_TAKEN = ?, @DMG_MITIGATED = ?, @GOLD = ?, @CREEP_SCORE = ?, @DRAGONS = ?, @BARONS = ?, @LEVEL = ?, @FIRST_BLOOD = ?, @FIRST_TOWER = ?, @SURRENDER = ?, @TIME_CC_OTHER = ?, @TIME_DEAD = ?, @CRIT = ?, @SPELL_1_CAST = ?, @SPELL_2_CAST = ?, @SPELL_3_CAST = ?, @SPELL_4_CAST = ?, @SUMM_1_CAST = ?, @SUMM_2_CAST = ?, @SUMM_1_ID = ?, @SUMM_2_ID = ?, @WARDS_PLACED = ?, @WARDS_KILLED = ?,@PUUID = ?;'
+                    cursor.execute(SQL, tuple([matchId, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, playerDb['ppuid'] ]))
                     match_current_count += 1
                     continue
 
