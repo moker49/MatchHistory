@@ -26,15 +26,15 @@ insertProc = config['procedure_insert']
 
 print('getting matches...')
 matchIds = lol_watcher.match.matchlist_by_puuid(region, puuid, count=match_count)
-print(matchIds)
 print('matches received\n')
 
 print(f'connecting to db...')
 with odbc.connect(conn_string) as con:
-    cursor = con.cursor()
     print(f'connected: {con}\n')
 
     for matchId in matchIds:
+        cursor = con.cursor()
+
         print(f'getting match details {matchId} ...')
         currentMatch = lol_watcher.match.by_id(region, matchId)
         print(f'match {matchId} received')
@@ -110,12 +110,14 @@ with odbc.connect(conn_string) as con:
             SQL = f'EXEC {insertProc} {procParamKeys};'
 
             cursor.execute(SQL, procParamValues)
-            print(f'inserted: {matchId}/{playerName}...')
-       
+
+        while cursor.nextset(): pass
+        cursor.commit()
+        print(f'inserted: {matchId}...')
+            
         print(f'waiting: {call_interval}s...\n')
         time.sleep(call_interval)
-    while cursor.nextset(): pass
-    cursor.commit()
+
 
 print('All inserts done\n')
 

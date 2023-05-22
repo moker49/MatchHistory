@@ -42,12 +42,11 @@ with odbc.connect(conn_string) as con:
     SQL = f'EXEC {ppuidsProc};'
     cursor.execute(SQL)
     playersDb = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
-    solo_playerDb = [playersDb[0]] # for testing
     print(f'{len(playersDb)} players ok...\n')
 
-    for playerDb in solo_playerDb:
+    for playerDb in playersDb:
         player_name = playerDb['player']
-        epoch_count = 1
+        epoch_count = 0
 
         while (True):
             match_current_count = 0
@@ -64,9 +63,9 @@ with odbc.connect(conn_string) as con:
                 break
 
             for matchId in matchIds:
-                print(f'{player_name} epoch:{epoch_count} match:{match_current_count}')
+                cursor = con.cursor()
                 currentMatch = lol_watcher.match.by_id(region, matchId)
-                print(f'match {match_current_count} : {matchId} received')
+                print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
                 info = currentMatch['info']
 
                 for player in info['participants']:
@@ -136,22 +135,18 @@ with odbc.connect(conn_string) as con:
 
                     procParamKeys = '@' + ' = ?, @'.join(playerMatch.keys()) + ' = ?'
                     procParamValues = tuple([i for i in playerMatch.values()])
+
                     SQL = f'EXEC {insertProc} {procParamKeys};'
-
                     cursor.execute(SQL, procParamValues)
-                    # print(f'inserted: {matchId}/{champName}...')
 
-                match_current_count += 1
-
-                while cursor.nextset():
-                    pass
+                while cursor.nextset(): pass
                 cursor.commit()
 
+                print(f'match {matchId} inserted')
                 print(f'waiting: {call_interval}s...\n')
                 time.sleep(call_interval)
+                match_current_count += 1
 
             epoch_count += 1
-
-
 
 print('All inserts done\n')
