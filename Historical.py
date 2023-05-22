@@ -31,15 +31,15 @@ conn_string = f"""
     Trust_Connection=yes;
 """
 insertProc = config['procedure_insert']
-ppuidsProc = config['procedure_ppuids']
+puuidsProc = config['procedure_puuids']
 
 print(f'connecting to db...')
 with odbc.connect(conn_string) as con:
     cursor = con.cursor()
     print(f'connected: {con}\n')
     
-    print(f'grabbing player ids (ppuids)\n')
-    SQL = f'EXEC {ppuidsProc};'
+    print(f'grabbing player ids (puuids)\n')
+    SQL = f'EXEC {puuidsProc};'
     cursor.execute(SQL)
     playersDb = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
     print(f'{len(playersDb)} players ok...\n')
@@ -74,7 +74,7 @@ with odbc.connect(conn_string) as con:
                 except ApiError:
                     print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId} not found\n')
                     SQL = f'EXEC {insertProc} @MATCH_ID = ?, @PLAYER = ?, @GAME_MDOE = ?, @CHAMPION = ?, @DATE = ?, @DURATION = ?, @WIN = ?, @KILLS = ?, @DEATHS = ?, @ASSISTS = ?, @DOUBLE_KILLS = ?, @TRIPLE_KILLS = ?, @QUADRA_KILLS = ?, @PENTA_KILLS = ?, @LEGENDARY_KILLS = ?, @DMG_TO_CHAMPS = ?, @DMG_TO_STRUCT = ?, @DMG_TAKEN = ?, @DMG_MITIGATED = ?, @GOLD = ?, @CREEP_SCORE = ?, @DRAGONS = ?, @BARONS = ?, @LEVEL = ?, @FIRST_BLOOD = ?, @FIRST_TOWER = ?, @SURRENDER = ?, @TIME_CC_OTHER = ?, @TIME_DEAD = ?, @CRIT = ?, @SPELL_1_CAST = ?, @SPELL_2_CAST = ?, @SPELL_3_CAST = ?, @SPELL_4_CAST = ?, @SUMM_1_CAST = ?, @SUMM_2_CAST = ?, @SUMM_1_ID = ?, @SUMM_2_ID = ?, @WARDS_PLACED = ?, @WARDS_KILLED = ?,@PUUID = ?;'
-                    cursor.execute(SQL, tuple([matchId, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, playerDb['ppuid'] ]))
+                    cursor.execute(SQL, tuple([matchId, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, playerDb['puuid'] ]))
                     match_current_count += 1
                     continue
 
