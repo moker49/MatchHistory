@@ -1,4 +1,4 @@
-from riotwatcher import LolWatcher
+from riotwatcher import LolWatcher, ApiError
 import time
 import json
 import pypyodbc as odbc
@@ -46,10 +46,10 @@ with odbc.connect(conn_string) as con:
 
     for playerDb in playersDb:
         player_name = playerDb['player']
-        epoch_count = 0
+        epoch_count = 5
 
         while (True):
-            match_current_count = 0
+            match_current_count = 38
             match_total_count = (epoch_count*100)+match_current_count
 
             print('getting matches...')
@@ -64,7 +64,13 @@ with odbc.connect(conn_string) as con:
 
             for matchId in matchIds:
                 cursor = con.cursor()
-                currentMatch = lol_watcher.match.by_id(region, matchId)
+                try:
+                    currentMatch = lol_watcher.match.by_id(region, matchId)
+                except ApiError:
+                    print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId} not found\n')
+                    match_current_count += 1
+                    continue
+
                 print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
                 info = currentMatch['info']
 
