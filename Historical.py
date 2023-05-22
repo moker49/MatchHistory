@@ -47,7 +47,6 @@ with odbc.connect(conn_string) as con:
         player_puuid = playerDb['puuid']
         epoch_count = 0
         if firstRun: epoch_count = config['epoch_start']
-        firstRun = False
 
         while (True):
             match_current_count = 0
