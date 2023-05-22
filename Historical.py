@@ -46,10 +46,10 @@ with odbc.connect(conn_string) as con:
 
     for playerDb in playersDb:
         player_name = playerDb['player']
-        epoch_count = 5
+        epoch_count = 0
 
         while (True):
-            match_current_count = 38
+            match_current_count = 0
             match_total_count = (epoch_count*100)+match_current_count
 
             print('getting matches...')
