@@ -11,8 +11,8 @@ config = {}
 with open('config.json') as json_file:
     config = json.load(json_file)
 call_interval = config['call_interval']
-epoch_start = config['epoch_start']
-epoch_insterval = config['epoch_insterval']
+# epoch_start = config['epoch_start']
+# epoch_insterval = config['epoch_insterval']
 pp = pprint.PrettyPrinter(indent=4)
 now = time.time()
 
@@ -42,31 +42,31 @@ with odbc.connect(conn_string) as con:
     SQL = f'EXEC {ppuidsProc};'
     cursor.execute(SQL)
     playersDb = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
+    solo_playerDb = [playersDb[0]] # for testing
     print(f'{len(playersDb)} players ok...\n')
 
-    for playerDb in playersDb:
+    for playerDb in solo_playerDb:
         player_name = playerDb['player']
-        epoch_current = epoch_start
-        iteration_current = 1
-        iteration_total = math.ceil(((now - epoch_start) / epoch_insterval))
-        iteration_remain = iteration_total - iteration_current
+        epoch_count = 1
 
-        while epoch_current < now:
-            print(f'{player_name} current iterations: {iteration_current}')
-            print(f'{player_name} remaining iterations: {iteration_remain}\n')
+        while (True):
+            match_current_count = 0
+            match_total_count = (epoch_count*100)+match_current_count
 
             print('getting matches...')
-            matchIds = lol_watcher.match.matchlist_by_puuid(region, puuid, count=match_count, start_time=epoch_current)
+            matchIds = lol_watcher.match.matchlist_by_puuid(region, puuid, start=match_total_count, count=match_count)
             print('matches received\n')
             print(f'waiting: {call_interval}s...\n')
             time.sleep(call_interval)
 
-            curent_match_i = 1
+            if len(matchIds) == 0:
+                print(f'all matches for {player_name} found\n')
+                break
 
             for matchId in matchIds:
-                print(f'{player_name} epoch: {iteration_current}/{iteration_remain}')
+                print(f'{player_name} epoch:{epoch_count} match:{match_current_count}')
                 currentMatch = lol_watcher.match.by_id(region, matchId)
-                print(f'match {curent_match_i} : {matchId} received')
+                print(f'match {match_current_count} : {matchId} received')
                 info = currentMatch['info']
 
                 for player in info['participants']:
@@ -140,7 +140,8 @@ with odbc.connect(conn_string) as con:
 
                     cursor.execute(SQL, procParamValues)
                     # print(f'inserted: {matchId}/{champName}...')
-                curent_match_i += 1
+
+                match_current_count += 1
 
                 while cursor.nextset():
                     pass
@@ -149,8 +150,8 @@ with odbc.connect(conn_string) as con:
                 print(f'waiting: {call_interval}s...\n')
                 time.sleep(call_interval)
 
-            iteration_current += 1
-            epoch_current += epoch_insterval
+            epoch_count += 1
+
 
 
 print('All inserts done\n')
