@@ -11,14 +11,11 @@ config = {}
 with open('config.json') as json_file:
     config = json.load(json_file)
 call_interval = config['call_interval']
-# epoch_start = config['epoch_start']
-# epoch_insterval = config['epoch_insterval']
 pp = pprint.PrettyPrinter(indent=4)
 now = time.time()
 
 # LOR WATCHER
 api_key = config['riot_api_key']
-puuid = config['puuid']
 region = config['region']
 match_count = config['match_count']
 lol_watcher = LolWatcher(api_key)
@@ -46,6 +43,7 @@ with odbc.connect(conn_string) as con:
 
     for playerDb in playersDb:
         player_name = playerDb['player']
+        player_puuid = playerDb['puuid']
         epoch_count = 0
 
         while (True):
@@ -53,7 +51,7 @@ with odbc.connect(conn_string) as con:
             match_total_count = (epoch_count*100)+match_current_count
 
             try:
-                matchIds = lol_watcher.match.matchlist_by_puuid(region, puuid, start=match_total_count, count=match_count)
+                matchIds = lol_watcher.match.matchlist_by_puuid(region, player_puuid, start=match_total_count, count=match_count)
             except ApiError:
                 print(f'{player_name} epoch:{epoch_count} error\n')
                 time.sleep(call_interval)

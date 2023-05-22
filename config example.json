@@ -1,0 +1,12 @@
+{
+    "riot_api_key": "your key",
+    "puuid": "your puuid",
+    "region": "americas",
+    "match_count": 100,
+    "sql_driver": "sql server",
+    "sql_server": "EFREN-PC\\SQLEXPRESS",
+    "sql_db": "MatchHistory",
+    "procedure_insert": "MATCH_I_V1",
+    "procedure_puuids": "PLAYER_SALL_V1",
+    "call_interval": 1.2
+}
