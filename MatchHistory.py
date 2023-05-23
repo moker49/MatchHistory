@@ -1,15 +1,21 @@
-from riotwatcher import LolWatcher
-import time, json, pypyodbc as odbc
+from riotwatcher import LolWatcher, ApiError
+import time
+import json
+import pypyodbc as odbc
+import pprint
+import math
 
-# CONFIG 
+
+# CONFIG
 config = {}
 with open('config.json') as json_file:
     config = json.load(json_file)
 call_interval = config['call_interval']
+pp = pprint.PrettyPrinter(indent=4)
+now = time.time()
 
 # LOR WATCHER
 api_key = config['riot_api_key']
-puuid = config['puuid']
 region = config['region']
 match_count = config['match_count']
 lol_watcher = LolWatcher(api_key)
@@ -22,45 +28,86 @@ conn_string = f"""
     Trust_Connection=yes;
 """
 insertProc = config['procedure_insert']
-
-
-print('getting matches...')
-matchIds = lol_watcher.match.matchlist_by_puuid(region, puuid, count=match_count)
-print('matches received\n')
+puuidsProc = config['procedure_puuids']
+firstRun = True
 
 print(f'connecting to db...')
 with odbc.connect(conn_string) as con:
+    cursor = con.cursor()
     print(f'connected: {con}\n')
+    
+    print(f'grabbing player ids (puuids)\n')
+    SQL = f'EXEC {puuidsProc};'
+    cursor.execute(SQL)
+    playersDb = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
+    print(f'{len(playersDb)} players ok...\n')
 
-    for matchId in matchIds:
-        cursor = con.cursor()
+    for playerDb in playersDb:
+        player_name = playerDb['player']
+        player_puuid = playerDb['puuid']
+        epoch_count = 0
+        if firstRun: epoch_count = config['epoch_start']
 
-        print(f'getting match details {matchId} ...')
-        currentMatch = lol_watcher.match.by_id(region, matchId)
-        print(f'match {matchId} received')
-        info = currentMatch['info']
+        match_current_count = 0
+        if firstRun: match_current_count = config['match_start']
+        firstRun = False
+        match_total_count = (epoch_count*100)+match_current_count
 
-        for player in info['participants']:
+        while (True):
+            try:
+                matchIds = lol_watcher.match.matchlist_by_puuid(region, player_puuid, start=match_total_count, count=match_count)
+                break
+            except ApiError:
+                print(f'{player_name} epoch:{epoch_count} error\n')
+                time.sleep(call_interval)
+                continue
 
-            raw = {
-                'win': player.get("win"),
-                'firstBlood': player.get("firstBloodKill"),
-                'firstBloodAssist': player.get("firstBloodAssist"),
-                'firstTower': player.get("firstTowerKill"),
-                'firstTowerAssist': player.get("firstTowerAssist"),
-                'surrender': player.get("gameEndedInSurrender"),
-                'earlySurrender': player.get("gameEndedInEarlySurrender")
-            }
+        print('matches received\n')
+        print(f'waiting: {call_interval}s...\n')
+        time.sleep(call_interval)
 
-            win = raw.get("win")
-            proccessed = {
-            'win': f"{win}",
-            'firstBlood': 'True' if raw.get("firstBlood") else 'Assist' if raw.get("firstBloodAssist") else 'False',
-            'firstTower': 'True' if raw.get("firstTower") else 'Assist' if raw.get("firstTowerAssist") else 'False',
-            'surrender': 'True' if raw.get("surrender") else 'Early' if raw.get("earlySurrender") else 'False',
-            }
+        if len(matchIds) == 0:
+            print(f'all matches for {player_name} found\n')
+            break
 
-            playerMatch = {
+        for matchId in matchIds:
+            cursor = con.cursor()
+            try:
+                currentMatch = lol_watcher.match.by_id(region, matchId)
+            except ApiError:
+                print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
+                SQL = f'EXEC {insertProc} @MATCH_ID = ?, @PLAYER = ?, @GAME_MODE = ?, @CHAMPION = ?, @DATE = ?, @DURATION = ?, @WIN = ?, @KILLS = ?, @DEATHS = ?, @ASSISTS = ?, @DOUBLE_KILLS = ?, @TRIPLE_KILLS = ?, @QUADRA_KILLS = ?, @PENTA_KILLS = ?, @LEGENDARY_KILLS = ?, @DMG_TO_CHAMPS = ?, @DMG_TO_STRUCT = ?, @DMG_TAKEN = ?, @DMG_MITIGATED = ?, @GOLD = ?, @CREEP_SCORE = ?, @DRAGONS = ?, @BARONS = ?, @LEVEL = ?, @FIRST_BLOOD = ?, @FIRST_TOWER = ?, @SURRENDER = ?, @TIME_CC_OTHER = ?, @TIME_DEAD = ?, @CRIT = ?, @SPELL_1_CAST = ?, @SPELL_2_CAST = ?, @SPELL_3_CAST = ?, @SPELL_4_CAST = ?, @SUMM_1_CAST = ?, @SUMM_2_CAST = ?, @SUMM_1_ID = ?, @SUMM_2_ID = ?, @WARDS_PLACED = ?, @WARDS_KILLED = ?,@PUUID = ?;'
+                cursor.execute(SQL, tuple([matchId, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, playerDb['puuid'] ]))
+                match_current_count += 1
+                print(f'match {matchId} inserted blank')
+                print(f'waiting: {call_interval}s...\n')
+                time.sleep(call_interval)
+                continue
+
+            print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
+            info = currentMatch['info']
+
+            for player in info['participants']:
+
+                raw = {
+                    'win': player.get("win"),
+                    'firstBlood': player.get("firstBloodKill"),
+                    'firstBloodAssist': player.get("firstBloodAssist"),
+                    'firstTower': player.get("firstTowerKill"),
+                    'firstTowerAssist': player.get("firstTowerAssist"),
+                    'surrender': player.get("gameEndedInSurrender"),
+                    'earlySurrender': player.get("gameEndedInEarlySurrender")
+                }
+
+                win = raw.get("win")
+                proccessed = {
+                'win': f"{win}",
+                'firstBlood': 'True' if raw.get("firstBlood") else 'Assist' if raw.get("firstBloodAssist") else 'False',
+                'firstTower': 'True' if raw.get("firstTower") else 'Assist' if raw.get("firstTowerAssist") else 'False',
+                'surrender': 'True' if raw.get("surrender") else 'Early' if raw.get("earlySurrender") else 'False',
+                }
+
+                playerMatch = {
                 'MATCH_ID': matchId,
                 'PLAYER': player.get("summonerName"),
                 'GAME_MODE': info.get("gameMode"),
@@ -103,30 +150,21 @@ with odbc.connect(conn_string) as con:
                 'WARDS_KILLED': player.get("wardsKilled"),
                 'PUUID': player.get("puuid")
             }
-            playerName = player['summonerName']
-            # print(playerMatch)
 
-            procParamKeys = '@' + ' = ?, @'.join(playerMatch.keys()) + ' = ?'
-            procParamValues = tuple([i for i in playerMatch.values()])
-            SQL = f'EXEC {insertProc} {procParamKeys};'
+                procParamKeys = '@' + ' = ?, @'.join(playerMatch.keys()) + ' = ?'
+                procParamValues = tuple([i for i in playerMatch.values()])
 
-            cursor.execute(SQL, procParamValues)
+                SQL = f'EXEC {insertProc} {procParamKeys};'
+                cursor.execute(SQL, procParamValues)
 
-        while cursor.nextset(): pass
-        cursor.commit()
-        print(f'inserted: {matchId}...')
-            
-        print(f'waiting: {call_interval}s...\n')
-        time.sleep(call_interval)
+            while cursor.nextset(): pass
+            cursor.commit()
 
+            print(f'match {matchId} inserted')
+            print(f'waiting: {call_interval}s...\n')
+            time.sleep(call_interval)
+            match_current_count += 1
+
+        epoch_count += 1
 
 print('All inserts done\n')
-
-
-
-
-
-
-
-
-

@@ -149,8 +149,6 @@ with odbc.connect(conn_string) as con:
                     'WARDS_KILLED': player.get("wardsKilled"),
                     'PUUID': player.get("puuid")
                 }
-                    champName = player['championName']
-                    # print(playerMatch)
 
                     procParamKeys = '@' + ' = ?, @'.join(playerMatch.keys()) + ' = ?'
                     procParamValues = tuple([i for i in playerMatch.values()])
