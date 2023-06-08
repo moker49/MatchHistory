@@ -1,9 +1,9 @@
 from riotwatcher import LolWatcher, ApiError
+from datetime import datetime
 import time
 import json
 import pypyodbc as odbc
 import pprint
-import math
 
 
 # CONFIG
@@ -168,3 +168,4 @@ with odbc.connect(conn_string) as con:
             epoch_count += 1
 
 print('All inserts done\n')
+print(datetime.now())
