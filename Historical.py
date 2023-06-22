@@ -10,7 +10,7 @@ import pprint
 config = {}
 with open('config.json') as json_file:
     config = json.load(json_file)
-call_interval = config['call_interval']
+call_interval = 1.2  #config['call_interval']
 pp = pprint.PrettyPrinter(indent=4)
 now = time.time()
 
