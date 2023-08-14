@@ -47,9 +47,10 @@ with odbc.connect(conn_string) as con:
         player_name = playerDb['player']
         player_puuid = playerDb['puuid']
         epoch_count = 0
+        epoch_stop = config['epoch_stop']
         if firstRun: epoch_count = config['epoch_start']
 
-        while (True):
+        while (True and epoch_count < epoch_stop):
             match_current_count = 0
             if firstRun: match_current_count = config['match_start']
             firstRun = False
