@@ -8,6 +8,7 @@
     "sql_db": "MatchHistory",
     "procedure_insert": "MATCH_I_V1",
     "procedure_puuids": "PLAYER_SALL_V1",
+    "procedure_select_match": "MATCH_S_V1",
     "epoch_start": 5,
     "match_start": 38,
     "epoch_stop": 7

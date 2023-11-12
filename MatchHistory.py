@@ -29,6 +29,7 @@ conn_string = f"""
 """
 insertProc = config['procedure_insert']
 puuidsProc = config['procedure_puuids']
+selectProc = config['procedure_select_match']
 firstRun = True
 
 print(f'connecting to db...')
@@ -44,17 +45,20 @@ with odbc.connect(conn_string) as con:
     duration = float(len(playersDb) * match_count * call_interval)
     print(f'expected duration: {duration}sec ({duration/60}min)\n')
 
+    # GET MY FAV PLAYERS
     for playerDb in playersDb:
         player_name = playerDb['player']
         player_puuid = playerDb['puuid']
         epoch_count = 0
         if firstRun: epoch_count = config['epoch_start']
+        matches_found = False
 
         match_current_count = 0
         if firstRun: match_current_count = config['match_start']
         firstRun = False
         match_total_count = (epoch_count*100)+match_current_count
 
+        # API CALL
         while (True):
             try:
                 matchIds = lol_watcher.match.matchlist_by_puuid(region, player_puuid, start=match_total_count, count=match_count)
@@ -68,27 +72,39 @@ with odbc.connect(conn_string) as con:
         print(f'waiting: {call_interval}s...\n')
         time.sleep(call_interval)
 
+        # ALL MATCHES FOUND
         if len(matchIds) == 0:
             print(f'all matches for {player_name} found\n')
             break
 
         for matchId in matchIds:
             cursor = con.cursor()
+
+            # IF MATCH LOCALLY FOUND, SKIP
+            SQL = f'EXEC {selectProc} {matchId};'
+            cursor.execute(SQL)
+            if (len(cursor.fetchall()) > 0):
+                matches_found = True
+                match_current_count += 1
+                continue
+
+            # INSERT GHOST MATCH IF ITS DETAILS ARE NOT FOUND
             try:
                 currentMatch = lol_watcher.match.by_id(region, matchId)
             except ApiError:
                 print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
                 SQL = f'EXEC {insertProc} @MATCH_ID = ?, @PLAYER = ?, @GAME_MODE = ?, @CHAMPION = ?, @DATE = ?, @DURATION = ?, @WIN = ?, @KILLS = ?, @DEATHS = ?, @ASSISTS = ?, @DOUBLE_KILLS = ?, @TRIPLE_KILLS = ?, @QUADRA_KILLS = ?, @PENTA_KILLS = ?, @LEGENDARY_KILLS = ?, @DMG_TO_CHAMPS = ?, @DMG_TO_STRUCT = ?, @DMG_TAKEN = ?, @DMG_MITIGATED = ?, @GOLD = ?, @CREEP_SCORE = ?, @DRAGONS = ?, @BARONS = ?, @LEVEL = ?, @FIRST_BLOOD = ?, @FIRST_TOWER = ?, @SURRENDER = ?, @TIME_CC_OTHER = ?, @TIME_DEAD = ?, @CRIT = ?, @SPELL_1_CAST = ?, @SPELL_2_CAST = ?, @SPELL_3_CAST = ?, @SPELL_4_CAST = ?, @SUMM_1_CAST = ?, @SUMM_2_CAST = ?, @SUMM_1_ID = ?, @SUMM_2_ID = ?, @WARDS_PLACED = ?, @WARDS_KILLED = ?,@PUUID = ?;'
                 cursor.execute(SQL, tuple([matchId, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, playerDb['puuid'] ]))
-                match_current_count += 1
                 print(f'match {matchId} inserted blank')
                 print(f'waiting: {call_interval}s...\n')
+                match_current_count += 1
                 time.sleep(call_interval)
                 continue
 
             print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
             info = currentMatch['info']
 
+            # BUILD ROW WITH DATA FROM API CALL
             for player in info['participants']:
 
                 raw = {
@@ -156,18 +172,24 @@ with odbc.connect(conn_string) as con:
                 procParamKeys = '@' + ' = ?, @'.join(playerMatch.keys()) + ' = ?'
                 procParamValues = tuple([i for i in playerMatch.values()])
 
+                # INSERT ROW
                 SQL = f'EXEC {insertProc} {procParamKeys};'
                 cursor.execute(SQL, procParamValues)
 
+            # COMMIT ALL INSERTS (ALL PLAYERS FROM CURRENT MATCH)
             while cursor.nextset(): pass
             cursor.commit()
 
             print(f'match {matchId} inserted')
             print(f'waiting: {call_interval}s...\n')
-            time.sleep(call_interval)
             match_current_count += 1
+            time.sleep(call_interval)
 
         epoch_count += 1
+
+    # PLAYER MATCHES WERE FOUND
+    if (matches_found):
+        print(f'Some matches for {player_name} were skipped beacuse they were already inserted in the past.\n')
 
 print('All inserts done\n')
 print(datetime.now())
