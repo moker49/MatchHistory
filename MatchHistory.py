@@ -187,9 +187,9 @@ with odbc.connect(conn_string) as con:
 
         epoch_count += 1
 
-    # PLAYER MATCHES WERE FOUND
-    if (matches_found):
-        print(f'Some matches for {player_name} were skipped beacuse they were already inserted in the past.\n')
+        # PLAYER MATCHES WERE FOUND
+        if (matches_found):
+            print(f'Some matches for {player_name} were skipped beacuse they were already inserted in the past.\n')
 
 print('All inserts done\n')
 print(datetime.now())
