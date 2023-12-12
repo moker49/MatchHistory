@@ -43,7 +43,7 @@ with odbc.connect(conn_string) as con:
     cursor.execute(SQL)
     playersDb = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
     duration = float(len(playersDb) * match_count * call_interval)
-    print(f'expected duration: {duration}sec ({duration/60}min)\n')
+    print(f'maximum expected duration: {duration}sec ({duration/60}min)\n')
 
     for playerDb in playersDb:
         player_name = playerDb['player']
