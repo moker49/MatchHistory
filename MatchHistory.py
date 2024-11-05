@@ -94,7 +94,8 @@ with odbc.connect(conn_string) as con:
             except ApiError:
                 print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
                 SQL = f'EXEC {insertProc} @MATCH_ID = ?, @PLAYER = ?, @GAME_MODE = ?, @CHAMPION = ?, @DATE = ?, @DURATION = ?, @WIN = ?, @KILLS = ?, @DEATHS = ?, @ASSISTS = ?, @DOUBLE_KILLS = ?, @TRIPLE_KILLS = ?, @QUADRA_KILLS = ?, @PENTA_KILLS = ?, @LEGENDARY_KILLS = ?, @DMG_TO_CHAMPS = ?, @DMG_TO_STRUCT = ?, @DMG_TAKEN = ?, @DMG_MITIGATED = ?, @GOLD = ?, @CREEP_SCORE = ?, @DRAGONS = ?, @BARONS = ?, @LEVEL = ?, @FIRST_BLOOD = ?, @FIRST_TOWER = ?, @SURRENDER = ?, @TIME_CC_OTHER = ?, @TIME_DEAD = ?, @CRIT = ?, @SPELL_1_CAST = ?, @SPELL_2_CAST = ?, @SPELL_3_CAST = ?, @SPELL_4_CAST = ?, @SUMM_1_CAST = ?, @SUMM_2_CAST = ?, @SUMM_1_ID = ?, @SUMM_2_ID = ?, @WARDS_PLACED = ?, @WARDS_KILLED = ?,@PUUID = ?;'
-                cursor.execute(SQL, tuple([matchId, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, playerDb['puuid'] ]))
+                values = (matchId, *([None] * 39), playerDb['puuid'])
+                cursor.execute(SQL, values)
                 print(f'match {matchId} inserted blank')
                 print(f'waiting: {call_interval}s...\n')
                 match_current_count += 1
