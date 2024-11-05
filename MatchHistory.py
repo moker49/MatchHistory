@@ -189,7 +189,7 @@ with odbc.connect(conn_string) as con:
 
         # PLAYER MATCHES WERE FOUND
         if (matches_found):
-            print(f'Some matches for {player_name} were skipped beacuse they were already inserted in the past.\n')
+            print(f'Some duplicate matches for {player_name} were skipped.\n')
 
 print('All inserts done\n')
 print(datetime.now())
