@@ -127,7 +127,7 @@ with odbc.connect(conn_string) as con:
 
                 playerMatch = {
                 'MATCH_ID': matchId,
-                'PLAYER': player.get("summonerName"),
+                'PLAYER': player.get("summonerName") or player.get("riotIdGameName"),
                 'GAME_MODE': info.get("gameMode"),
                 'CHAMPION': player.get("championName"),
                 'DATE': info.get("gameStartTimestamp"),
