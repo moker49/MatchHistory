@@ -1,196 +1,417 @@
 from riotwatcher import LolWatcher, ApiError
-from datetime import datetime
-import time
-import json
+import time, json, logging
 import pypyodbc as odbc
-import pprint
+from logging.handlers import RotatingFileHandler
 
 
-# CONFIG
-config = {}
-with open('config.json') as json_file:
+# =========================
+# LOGGING
+# =========================
+with open("config.json") as json_file:
     config = json.load(json_file)
-call_interval = 1.2  #config['call_interval']
-pp = pprint.PrettyPrinter(indent=4)
-now = time.time()
 
-# LOR WATCHER
-api_key = config['riot_api_key']
-region = config['region']
-match_count = config['match_count']
+log_formatter = logging.Formatter(
+    "%(asctime)s | %(levelname)s | %(message)s"
+)
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+# Clear default handlers in case script is re-run in same interpreter
+root_logger.handlers.clear()
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+root_logger.addHandler(console_handler)
+
+# Rotating file handler
+file_handler = RotatingFileHandler(
+    "matchhistory.log",
+    maxBytes=1_048_576,   # 1 MB
+    backupCount=1,        # keep 1 old log file, delete older ones
+    encoding="utf-8"
+)
+file_handler.setFormatter(log_formatter)
+root_logger.addHandler(file_handler)
+
+# =========================
+# CONFIG
+# =========================
+
+call_interval = config.get("call_interval", 1.2)
+api_key = config["riot_api_key"]
+region = config["region"]
+match_count = 100
+epoch_stop = 50
+
+insert_proc = config["procedure_insert"]
+ghost_insert_proc = config["procedure_insert_ghost"]
+puuids_proc = config["procedure_puuids"]
+select_all_for_player_proc = config["procedure_select_all_for_player"]
+missing_game_modes_proc = config["procedure_select_missing_game_modes"]
+
+max_api_retries = config.get("max_api_retries", 5)
+
 lol_watcher = LolWatcher(api_key)
 
-# SQL
 conn_string = f"""
     DRIVER={{{config['sql_driver']}}};
     SERVER={config['sql_server']};
     DATABASE={config['sql_db']};
     Trust_Connection=yes;
 """
-insertProc = config['procedure_insert']
-puuidsProc = config['procedure_puuids']
-selectProc = config['procedure_select_match']
-firstRun = True
 
-print(f'connecting to db...')
-with odbc.connect(conn_string) as con:
-    cursor = con.cursor()
-    print(f'connected: {con}\n')
-    
-    # GET MY FAV PLAYERS
-    print(f'grabbing player ids (puuids)\n')
-    SQL = f'EXEC {puuidsProc};'
-    cursor.execute(SQL)
-    playersDb = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
-    print(f'{len(playersDb)} players ok...')
-    duration = float(len(playersDb) * match_count * call_interval)
-    print(f'maximum expected duration: {duration}sec ({duration/60}min)\n')
 
-    for playerDb in playersDb:
-        player_name = playerDb['player']
-        player_puuid = playerDb['puuid']
-        epoch_count = 0
-        epoch_stop = config['epoch_stop']
-        if firstRun: epoch_count = config['epoch_start']
-        matches_found = False
+# =========================
+# HELPERS
+# =========================
+def sleep_with_log(seconds: float, reason: str = "") -> None:
+    if reason:
+        logging.debug("Waiting %.2fs (%s)", seconds, reason)
+    else:
+        logging.debug("Waiting %.2fs", seconds)
+    time.sleep(seconds)
 
-        while (epoch_count < epoch_stop):
-            match_current_count = 0
-            if firstRun: match_current_count = config['match_start']
-            firstRun = False
-            match_total_count = (epoch_count*100)+match_current_count
 
-            # API CALL
-            try:
-                matchIds = lol_watcher.match.matchlist_by_puuid(region, player_puuid, start=match_total_count, count=match_count)
-            except ApiError:
-                print(f'{player_name} epoch:{epoch_count} error\n')
-                time.sleep(call_interval)
+def riot_api_call(func, *args, **kwargs):
+    """
+    Wrapper for Riot API calls with retry handling.
+    - Handles 429 with Retry-After if available
+    - Retries transient failures up to max_api_retries
+    """
+    last_exc = None
+
+    for attempt in range(1, max_api_retries + 1):
+        try:
+            result = func(*args, **kwargs)
+            sleep_with_log(call_interval, "rate-limit spacing")
+            return result
+
+        except ApiError as e:
+            last_exc = e
+
+            status_code = getattr(getattr(e, "response", None), "status_code", None)
+            headers = getattr(getattr(e, "response", None), "headers", {}) or {}
+
+            if status_code == 429:
+                retry_after = headers.get("Retry-After")
+                wait_seconds = float(retry_after) if retry_after else max(call_interval, 1.0)
+                logging.warning(
+                    "Riot API rate limited (429). Attempt %s/%s. Sleeping %.2fs.",
+                    attempt, max_api_retries, wait_seconds
+                )
+                time.sleep(wait_seconds)
                 continue
 
-            print('matches received\n')
-            print(f'waiting: {call_interval}s...\n')
-            time.sleep(call_interval)
+            if status_code in (500, 502, 503, 504):
+                wait_seconds = max(call_interval, attempt * 2)
+                logging.warning(
+                    "Riot API transient error %s. Attempt %s/%s. Sleeping %.2fs.",
+                    status_code, attempt, max_api_retries, wait_seconds
+                )
+                time.sleep(wait_seconds)
+                continue
 
-            # ALL MATCHES FOUND
-            if len(matchIds) == 0:
-                print(f'all matches for {player_name} found\n')
-                break
+            logging.error("Riot API non-retryable error: %s", e)
+            raise
 
-            for matchId in matchIds:
-                cursor = con.cursor()
+        except Exception as e:
+            last_exc = e
 
-                # IF MATCH LOCALLY FOUND, SKIP
-                SQL = f'EXEC {selectProc} {matchId};'
-                cursor.execute(SQL)
-                if (len(cursor.fetchall()) > 0):
-                    matches_found = True
-                    match_current_count += 1
-                    continue
+            wait_seconds = max(call_interval, attempt * 2)
+            logging.exception(
+                "Unexpected error during Riot API call. Attempt %s/%s. Sleeping %.2fs.",
+                attempt, max_api_retries, wait_seconds
+            )
+            time.sleep(wait_seconds)
 
-                # INSERT GHOST MATCH IF ITS DETAILS ARE NOT FOUND
+    raise RuntimeError(
+        f"Riot API call failed after {max_api_retries} attempts."
+    ) from last_exc
+
+
+def get_players(cursor):
+    logging.info("Grabbing player ids (puuids)...")
+    cursor.execute(f"EXEC {puuids_proc};")
+    players = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
+    logging.info("%s players loaded.", len(players))
+    return players
+
+
+def get_existing_match_ids_for_player(cursor, player_puuid):
+    """
+    Expects a proc like:
+        EXEC dbo.YourProc @PUUID = ?
+    returning rows containing MATCH_ID
+    """
+    sql = f"EXEC {select_all_for_player_proc} @PUUID = ?;"
+    cursor.execute(sql, (player_puuid,))
+    rows = cursor.fetchall()
+
+    existing_ids = set()
+
+    col_names = []
+    if cursor.description:
+        col_names = [col[0].upper() for col in cursor.description]
+    for row in rows:
+        if "MATCH_ID" in col_names:
+            idx = col_names.index("MATCH_ID")
+            existing_ids.add(str(row[idx]))
+        elif len(row) > 0:
+            existing_ids.add(str(row[0]))
+
+    logging.info("Loaded %s existing match ids for player puuid=%s", len(existing_ids), player_puuid)
+    return existing_ids
+
+
+def build_processed_flags(player):
+    raw = {
+        "win": player.get("win"),
+        "firstBlood": player.get("firstBloodKill"),
+        "firstBloodAssist": player.get("firstBloodAssist"),
+        "firstTower": player.get("firstTowerKill"),
+        "firstTowerAssist": player.get("firstTowerAssist"),
+        "surrender": player.get("gameEndedInSurrender"),
+        "earlySurrender": player.get("gameEndedInEarlySurrender"),
+    }
+
+    win = raw.get("win")
+    processed = {
+        "win": f"{win}",
+        "firstBlood": "True" if raw.get("firstBlood") else "Assist" if raw.get("firstBloodAssist") else "False",
+        "firstTower": "True" if raw.get("firstTower") else "Assist" if raw.get("firstTowerAssist") else "False",
+        "surrender": "True" if raw.get("surrender") else "Early" if raw.get("earlySurrender") else "False",
+    }
+    return processed
+
+
+def build_player_match(match_id, info, player):
+    processed = build_processed_flags(player)
+
+    return {
+        "MATCH_ID": match_id,
+        "PLAYER": player.get("summonerName") or player.get("riotIdGameName"),
+        "GAME_MODE": info.get("gameMode"),
+        "CHAMPION": player.get("championName"),
+        "DATE": info.get("gameStartTimestamp"),
+        "DURATION": info.get("gameDuration"),
+        "WIN": processed.get("win"),
+        "KILLS": player.get("kills"),
+        "DEATHS": player.get("deaths"),
+        "ASSISTS": player.get("assists"),
+        "DOUBLE_KILLS": player.get("doubleKills"),
+        "TRIPLE_KILLS": player.get("tripleKills"),
+        "QUADRA_KILLS": player.get("quadraKills"),
+        "PENTA_KILLS": player.get("pentaKills"),
+        "LEGENDARY_KILLS": player.get("unrealKills"),
+        "DMG_TO_CHAMPS": player.get("totalDamageDealtToChampions"),
+        "DMG_TO_STRUCT": player.get("damageDealtToBuildings"),
+        "DMG_TAKEN": player.get("totalDamageTaken"),
+        "DMG_MITIGATED": player.get("damageSelfMitigated"),
+        "GOLD": player.get("goldEarned"),
+        "CREEP_SCORE": player.get("totalMinionsKilled"),
+        "DRAGONS": player.get("dragonKills"),
+        "BARONS": player.get("baronKills"),
+        "LEVEL": player.get("champLevel"),
+        "FIRST_BLOOD": processed.get("firstBlood"),
+        "FIRST_TOWER": processed.get("firstTower"),
+        "SURRENDER": processed.get("surrender"),
+        "TIME_CC_OTHER": player.get("timeCCingOthers"),
+        "TIME_DEAD": player.get("totalTimeSpentDead"),
+        "CRIT": player.get("largestCriticalStrike"),
+        "SPELL_1_CAST": player.get("spell1Casts"),
+        "SPELL_2_CAST": player.get("spell2Casts"),
+        "SPELL_3_CAST": player.get("spell3Casts"),
+        "SPELL_4_CAST": player.get("spell4Casts"),
+        "SUMM_1_CAST": player.get("summoner1Casts"),
+        "SUMM_2_CAST": player.get("summoner2Casts"),
+        "SUMM_1_ID": player.get("summoner1Id"),
+        "SUMM_2_ID": player.get("summoner2Id"),
+        "WARDS_PLACED": player.get("wardsPlaced"),
+        "WARDS_KILLED": player.get("wardsKilled"),
+        "PUUID": player.get("puuid"),
+    }
+
+
+def insert_match_participants(cursor, match_id, current_match):
+    info = current_match["info"]
+
+    for player in info["participants"]:
+        player_match = build_player_match(match_id, info, player)
+        proc_param_keys = "@" + " = ?, @".join(player_match.keys()) + " = ?"
+        proc_param_values = tuple(player_match.values())
+
+        sql = f"EXEC {insert_proc} {proc_param_keys};"
+        cursor.execute(sql, proc_param_values)
+
+
+def insert_ghost_match(cursor, match_id, player_puuid):
+    """
+    Separate proc for ghost insert.
+    Expected proc signature example:
+        EXEC dbo.proc_insert_ghost_match @MATCH_ID = ?, @PUUID = ?;
+    """
+    sql = f"EXEC {ghost_insert_proc} @MATCH_ID = ?, @PUUID = ?;"
+    cursor.execute(sql, (match_id, player_puuid))
+
+def get_game_modes_missing_participant_count(cursor):
+    sql = f"EXEC {missing_game_modes_proc};"
+    cursor.execute(sql)
+    rows = cursor.fetchall()
+
+    missing_modes = []
+    if cursor.description:
+        col_names = [col[0].upper() for col in cursor.description]
+        if "GAME_MODE" in col_names:
+            idx = col_names.index("GAME_MODE")
+            missing_modes = [str(row[idx]) for row in rows if row[idx] is not None]
+        elif rows and len(rows[0]) > 0:
+            missing_modes = [str(row[0]) for row in rows if row[0] is not None]
+
+    return missing_modes
+
+def process_player(con, cursor, player_db):
+    player_name = player_db["player"]
+    player_puuid = player_db["puuid"]
+    matches_found = False
+
+    logging.info("Processing player: %s", player_name)
+
+    existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
+
+    estimated_calls = epoch_stop * match_count
+    duration = float(estimated_calls * call_interval)
+    logging.info(
+        "Estimated max duration for %s: %.2fs (%.2f min)",
+        player_name, duration, duration / 60
+    )
+
+    for epoch_count in range(epoch_stop):
+        match_total_count = epoch_count * match_count
+        logging.info(
+            "%s | epoch=%s | requesting matchlist start=%s count=%s",
+            player_name, epoch_count, match_total_count, match_count
+        )
+
+        try:
+            match_ids = riot_api_call(
+                lol_watcher.match.matchlist_by_puuid,
+                region,
+                player_puuid,
+                start=match_total_count,
+                count=match_count
+            )
+        except Exception:
+            logging.exception(
+                "%s | epoch=%s | unable to retrieve match list; skipping epoch",
+                player_name, epoch_count
+            )
+            continue
+
+        if not match_ids:
+            logging.info("All matches for %s found. No more ids returned.", player_name)
+            break
+
+        epoch_insert_count = 0
+        epoch_skip_count = 0
+        epoch_ghost_count = 0
+
+        for match_index, match_id in enumerate(match_ids):
+            match_id = str(match_id)
+
+            if match_id in existing_match_ids:
+                matches_found = True
+                epoch_skip_count += 1
+                logging.debug(
+                    "%s | epoch=%s | match=%s | already exists locally, skipping",
+                    player_name, epoch_count, match_id
+                )
+                continue
+
+            logging.info(
+                "%s | epoch=%s | match_idx=%s | match_id=%s",
+                player_name, epoch_count, match_index, match_id
+            )
+
+            try:
+                current_match = riot_api_call(lol_watcher.match.by_id, region, match_id)
+            except Exception:
+                logging.exception(
+                    "%s | epoch=%s | match_id=%s | failed to retrieve details, inserting ghost row",
+                    player_name, epoch_count, match_id
+                )
                 try:
-                    currentMatch = lol_watcher.match.by_id(region, matchId)
-                except ApiError:
-                    print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
-                    SQL = f'EXEC {insertProc} @MATCH_ID = ?, @PLAYER = ?, @GAME_MODE = ?, @CHAMPION = ?, @DATE = ?, @DURATION = ?, @WIN = ?, @KILLS = ?, @DEATHS = ?, @ASSISTS = ?, @DOUBLE_KILLS = ?, @TRIPLE_KILLS = ?, @QUADRA_KILLS = ?, @PENTA_KILLS = ?, @LEGENDARY_KILLS = ?, @DMG_TO_CHAMPS = ?, @DMG_TO_STRUCT = ?, @DMG_TAKEN = ?, @DMG_MITIGATED = ?, @GOLD = ?, @CREEP_SCORE = ?, @DRAGONS = ?, @BARONS = ?, @LEVEL = ?, @FIRST_BLOOD = ?, @FIRST_TOWER = ?, @SURRENDER = ?, @TIME_CC_OTHER = ?, @TIME_DEAD = ?, @CRIT = ?, @SPELL_1_CAST = ?, @SPELL_2_CAST = ?, @SPELL_3_CAST = ?, @SPELL_4_CAST = ?, @SUMM_1_CAST = ?, @SUMM_2_CAST = ?, @SUMM_1_ID = ?, @SUMM_2_ID = ?, @WARDS_PLACED = ?, @WARDS_KILLED = ?,@PUUID = ?;'
-                    values = (matchId, *([None] * 39), playerDb['puuid'])
-                    cursor.execute(SQL, values)
-                    print(f'match {matchId} inserted blank')
-                    print(f'waiting: {call_interval}s...\n')
-                    match_current_count += 1
-                    time.sleep(call_interval)
-                    continue
+                    insert_ghost_match(cursor, match_id, player_puuid)
+                    existing_match_ids.add(match_id)
+                    epoch_ghost_count += 1
+                except Exception:
+                    logging.exception(
+                        "%s | epoch=%s | match_id=%s | ghost insert failed",
+                        player_name, epoch_count, match_id
+                    )
+                continue
 
-                print(f'{player_name} epoch:{epoch_count} match:{match_current_count} : {matchId}')
-                info = currentMatch['info']
+            try:
+                insert_match_participants(cursor, match_id, current_match)
+                existing_match_ids.add(match_id)
+                epoch_insert_count += 1
+                logging.debug("match %s inserted", match_id)
+            except Exception:
+                logging.exception(
+                    "%s | epoch=%s | match_id=%s | failed during DB insert",
+                    player_name, epoch_count, match_id
+                )
+                con.rollback()
+                existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
+                logging.warning("%s | epoch=%s | match_id=%s | rollback completed", player_name, epoch_count, match_id)
 
-                # BUILD ROW WITH DATA FROM API CALL
-                for player in info['participants']:
+        try:
+            con.commit()
+            logging.info(
+                "%s | epoch=%s committed | inserted=%s | ghost=%s | skipped=%s",
+                player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
+            )
+        except Exception:
+            logging.exception("%s | epoch=%s | commit failed", player_name, epoch_count)
+            con.rollback()
+            existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
+            logging.warning("%s | epoch=%s | rollback completed", player_name, epoch_count)
 
-                    raw = {
-                        'win': player.get("win"),
-                        'firstBlood': player.get("firstBloodKill"),
-                        'firstBloodAssist': player.get("firstBloodAssist"),
-                        'firstTower': player.get("firstTowerKill"),
-                        'firstTowerAssist': player.get("firstTowerAssist"),
-                        'surrender': player.get("gameEndedInSurrender"),
-                        'earlySurrender': player.get("gameEndedInEarlySurrender")
-                    }
+    if matches_found:
+        logging.info("Some duplicate matches for %s were skipped.", player_name)
 
-                    win = raw.get("win")
-                    proccessed = {
-                    'win': f"{win}",
-                    'firstBlood': 'True' if raw.get("firstBlood") else 'Assist' if raw.get("firstBloodAssist") else 'False',
-                    'firstTower': 'True' if raw.get("firstTower") else 'Assist' if raw.get("firstTowerAssist") else 'False',
-                    'surrender': 'True' if raw.get("surrender") else 'Early' if raw.get("earlySurrender") else 'False',
-                    }
 
-                    playerMatch = {
-                    'MATCH_ID': matchId,
-                    'PLAYER': player.get("summonerName") or player.get("riotIdGameName"),
-                    'GAME_MODE': info.get("gameMode"),
-                    'CHAMPION': player.get("championName"),
-                    'DATE': info.get("gameStartTimestamp"),
-                    'DURATION': info.get("gameDuration"),
-                    'WIN': proccessed.get("win"),
-                    'KILLS': player.get("kills"),
-                    'DEATHS': player.get("deaths"),
-                    'ASSISTS': player.get("assists"),
-                    'DOUBLE_KILLS': player.get("doubleKills"),
-                    'TRIPLE_KILLS': player.get("tripleKills"),
-                    'QUADRA_KILLS': player.get("quadraKills"),
-                    'PENTA_KILLS': player.get("pentaKills"),
-                    'LEGENDARY_KILLS': player.get("unrealKills"),
-                    'DMG_TO_CHAMPS': player.get("totalDamageDealtToChampions"),
-                    'DMG_TO_STRUCT': player.get("damageDealtToBuildings"),
-                    'DMG_TAKEN': player.get("totalDamageTaken"),
-                    'DMG_MITIGATED': player.get("damageSelfMitigated"),
-                    'GOLD': player.get("goldEarned"),
-                    'CREEP_SCORE': player.get("totalMinionsKilled"),
-                    'DRAGONS': player.get("dragonKills"),
-                    'BARONS': player.get("baronKills"),
-                    'LEVEL': player.get("champLevel"),
-                    'FIRST_BLOOD': proccessed.get("firstBlood"),
-                    'FIRST_TOWER': proccessed.get("firstTower"),
-                    'SURRENDER': proccessed.get("surrender"),
-                    'TIME_CC_OTHER': player.get("timeCCingOthers"),
-                    'TIME_DEAD': player.get("totalTimeSpentDead"),
-                    'CRIT': player.get("largestCriticalStrike"),
-                    'SPELL_1_CAST': player.get("spell1Casts"),
-                    'SPELL_2_CAST': player.get("spell2Casts"),
-                    'SPELL_3_CAST': player.get("spell3Casts"),
-                    'SPELL_4_CAST': player.get("spell4Casts"),
-                    'SUMM_1_CAST': player.get("summoner1Casts"),
-                    'SUMM_2_CAST': player.get("summoner2Casts"),
-                    'SUMM_1_ID': player.get("summoner1Id"),
-                    'SUMM_2_ID': player.get("summoner2Id"),
-                    'WARDS_PLACED': player.get("wardsPlaced"),
-                    'WARDS_KILLED': player.get("wardsKilled"),
-                    'PUUID': player.get("puuid")
-                }
+# =========================
+# MAIN
+# =========================
+def main():
+    logging.info("Connecting to DB...")
 
-                    procParamKeys = '@' + ' = ?, @'.join(playerMatch.keys()) + ' = ?'
-                    procParamValues = tuple([i for i in playerMatch.values()])
+    with odbc.connect(conn_string) as con:
+        cursor = con.cursor()
+        logging.info("Connected to DB.")
+        players_db = get_players(cursor)
 
-                    # INSERT ROW
-                    SQL = f'EXEC {insertProc} {procParamKeys};'
-                    cursor.execute(SQL, procParamValues)
+        for player_db in players_db:
+            try:
+                process_player(con, cursor, player_db)
+            except Exception:
+                logging.exception(
+                    "Fatal error while processing player %s",
+                    player_db.get("player")
+                )
 
-                # COMMIT ALL INSERTS (ALL PLAYERS FROM CURRENT MATCH)
-                while cursor.nextset(): pass
-                cursor.commit()
+        missing_modes = get_game_modes_missing_participant_count(cursor)
+        if missing_modes:
+            logging.warning(
+                "Game modes missing participant count: %s",
+                ", ".join(missing_modes)
+            )
+        else:
+            logging.info("All active game modes have participant counts defined.")
 
-                print(f'match {matchId} inserted')
-                print(f'waiting: {call_interval}s...\n')
-                match_current_count += 1
-                time.sleep(call_interval)
+    logging.info("All inserts done.")
 
-            epoch_count += 1
-        
-        # PLAYER MATCHES WERE FOUND
-        if (matches_found):
-            print(f'Some duplicate matches for {player_name} were skipped.\n')
-
-print('All inserts done\n')
-print(datetime.now())
+if __name__ == "__main__":
+    main()
