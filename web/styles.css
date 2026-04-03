@@ -94,7 +94,7 @@ h1 {
 
 .layout {
   display: grid;
-  grid-template-columns: 420px minmax(0, 1fr);
+  grid-template-columns: 480px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
   transition: grid-template-columns 0.25s ease;

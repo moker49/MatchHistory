@@ -1,47 +1,20 @@
-const players = [
-  "Efren",
-  "Luna",
-  "Vex",
-  "RivenMain",
-  "ShadowFox",
-  "Astra",
-  "Kairo",
-  "PixelMage"
-];
+let CONFIG = {};
 
-const allColumns = [
-  { key: "PLAYER", label: "Player", type: "text", default: true },
-  { key: "GAME_MODE", label: "Game Mode", type: "text", default: true },
-  { key: "CHAMPION", label: "Champion", type: "text", default: true },
-  { key: "DATE", label: "Date", type: "text", default: true },
-  { key: "WIN", label: "Win", type: "text", default: true },
-  { key: "KILLS", label: "Kills", type: "number", default: true },
-  { key: "DEATHS", label: "Deaths", type: "number", default: true },
-  { key: "ASSISTS", label: "Assists", type: "number", default: true },
-  { key: "DURATION", label: "Duration", type: "number", default: false },
-  { key: "DOUBLE_KILLS", label: "Double Kills", type: "number", default: false },
-  { key: "TRIPLE_KILLS", label: "Triple Kills", type: "number", default: false },
-  { key: "QUADRA_KILLS", label: "Quadra Kills", type: "number", default: false },
-  { key: "PENTA_KILLS", label: "Penta Kills", type: "number", default: false },
-  { key: "LEGENDARY_KILLS", label: "Legendary Kills", type: "number", default: false },
-  { key: "DMG_TO_CHAMPS", label: "Damage to Champs", type: "number", default: false },
-  { key: "DMG_TO_STRUCT", label: "Damage to Structures", type: "number", default: false },
-  { key: "DMG_TAKEN", label: "Damage Taken", type: "number", default: false },
-  { key: "DMG_MITIGATED", label: "Damage Mitigated", type: "number", default: false },
-  { key: "GOLD", label: "Gold", type: "number", default: false },
-  { key: "CREEP_SCORE", label: "Creep Score", type: "number", default: false },
-  { key: "DRAGONS", label: "Dragons", type: "number", default: false },
-  { key: "BARONS", label: "Barons", type: "number", default: false },
-  { key: "LEVEL", label: "Level", type: "number", default: false },
-  { key: "FIRST_BLOOD", label: "First Blood", type: "text", default: false },
-  { key: "FIRST_TOWER", label: "First Tower", type: "text", default: false },
-  { key: "SURRENDER", label: "Surrender", type: "text", default: false },
-  { key: "TIME_CC_OTHER", label: "Time CC Others", type: "number", default: false },
-  { key: "TIME_DEAD", label: "Time Dead", type: "number", default: false },
-  { key: "CRIT", label: "Largest Crit", type: "number", default: false },
-  { key: "WARDS_PLACED", label: "Wards Placed", type: "number", default: false },
-  { key: "WARDS_KILLED", label: "Wards Killed", type: "number", default: false }
-];
+let players = [];
+let selectedPlayers = new Set();
+
+let allColumns = [];
+
+const defaultSelectedColumnKeys = new Set([
+  "PLAYER",
+  "GAME_MODE",
+  "CHAMPION",
+  "DATE",
+  "WIN",
+  "KILLS",
+  "DEATHS",
+  "ASSISTS"
+]);
 
 const mockData = [
   {
@@ -211,8 +184,6 @@ const mockData = [
   }
 ];
 
-let selectedPlayers = new Set(players.slice(0, 2));
-
 const playerOptions = document.getElementById("playerOptions");
 const columnsContainer = document.getElementById("columnsContainer");
 const resultsHead = document.getElementById("resultsHead");
@@ -225,8 +196,81 @@ const settingsToggleIcon = document.getElementById("settingsToggleIcon");
 const controlsPanel = document.getElementById("controlsPanel");
 const layout = document.querySelector(".layout");
 
+async function loadConfig() {
+  try {
+    const response = await fetch("config.json");
+    CONFIG = await response.json();
+  } catch (err) {
+    console.error("Failed to load config.json:", err);
+
+    CONFIG = {
+      api_host: "127.0.0.1",
+      api_port: 5001,
+      api_debug: true
+    };
+  }
+}
+
+function getApiBaseUrl() {
+  return `http://${CONFIG.api_host}:${CONFIG.api_port}`;
+}
+
+async function loadPlayers() {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/api/players`);
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || `Request failed (${response.status})`);
+    }
+
+    players = data.players || [];
+
+    // default select first 2 players by PLAYER name
+    selectedPlayers = new Set(
+      players.slice(0, 2).map((player) => player.PLAYER)
+    );
+
+    renderPlayerOptions();
+  } catch (err) {
+    console.error("Failed to load players:", err);
+
+    playerOptions.innerHTML = `
+      <div class="empty-state">
+        Failed to load players.
+      </div>
+    `;
+  }
+}
+
+async function loadColumns() {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/api/columns`);
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || `Request failed (${response.status})`);
+    }
+
+    allColumns = (data.columns || []).map((column) => ({
+      ...column,
+      default: defaultSelectedColumnKeys.has(column.key)
+    }));
+
+    renderColumnControls();
+  } catch (err) {
+    console.error("Failed to load columns:", err);
+
+    columnsContainer.innerHTML = `
+      <div class="empty-state">
+        Failed to load columns.
+      </div>
+    `;
+  }
+}
+
 function getOperatorOptions(type) {
-  if (type === "number") {
+  if (type === "number" || type === "date") {
     return [
       { value: "eq", label: "= equal to" },
       { value: "gt", label: "> greater than" },
@@ -236,10 +280,15 @@ function getOperatorOptions(type) {
     ];
   }
 
+  if (type === "select" || type === "boolean") {
+    return [
+      { value: "equals", label: "is" }
+    ];
+  }
+
   return [
     { value: "contains", label: "contains" },
-    { value: "equals", label: "equals" },
-    { value: "starts", label: "starts with" }
+    { value: "equals", label: "equals" }
   ];
 }
 
@@ -296,26 +345,35 @@ function renderColumnControls() {
       const row = document.createElement("div");
       row.className = "filter-row";
 
-      const ops = getOperatorOptions(column.type)
+      const operatorOptions = getOperatorOptions(column.type);
+      const resolvedOperator = operatorValue || operatorOptions[0].value;
+      const isFixedOperatorType = false; // column.type === "select" || column.type === "boolean";
+
+      const ops = operatorOptions
         .map((op) => `
-          <option value="${op.value}" ${op.value === operatorValue ? "selected" : ""}>
-            ${op.label}
-          </option>
-        `)
+      <option value="${op.value}" ${op.value === resolvedOperator ? "selected" : ""}>
+        ${op.label}
+      </option>
+    `)
         .join("");
 
       row.innerHTML = `
-        <select class="filter-select">
-          ${ops}
-        </select>
-        <input
-          class="filter-input"
-          type="${column.type === "number" ? "number" : "text"}"
-          placeholder="value"
-          value="${inputValue}"
-        />
-        <button type="button" class="remove-filter-btn">x</button>
-      `;
+    ${isFixedOperatorType
+          ? `<input type="hidden" class="filter-select" value="${resolvedOperator}" />`
+          : `
+          <select class="filter-select">
+            ${ops}
+          </select>
+        `
+        }
+    <input
+      class="filter-input"
+      type="${column.type === "number" ? "number" : column.type === "date" ? "date" : "text"}"
+      placeholder="value"
+      value="${inputValue}"
+    />
+    <button type="button" class="remove-filter-btn">x</button>
+  `;
 
       const removeBtn = row.querySelector(".remove-filter-btn");
 
@@ -386,16 +444,18 @@ function renderColumnControls() {
 }
 
 function renderPlayerOptions() {
-  playerOptions.innerHTML = players.map((player) => {
-    const isSelected = selectedPlayers.has(player);
+  playerOptions.innerHTML = players.map((playerObj) => {
+    const playerName = playerObj.PLAYER;
+    const isSelected = selectedPlayers.has(playerName);
 
     return `
       <button
         type="button"
         class="player-option ${isSelected ? "selected" : ""}"
-        data-player="${player}"
+        data-player="${playerName}"
+        data-puuid="${playerObj.PUUID}"
       >
-        <span class="player-option-name">${player}</span>
+        <span class="player-option-name">${playerName}</span>
         <span class="player-option-check">✓</span>
       </button>
     `;
@@ -414,10 +474,6 @@ function renderPlayerOptions() {
       renderPlayerOptions();
     });
   });
-}
-
-function initPlayers() {
-  renderPlayerOptions();
 }
 
 function getSelectedPlayers() {
@@ -495,14 +551,38 @@ function matchesFilter(rowValue, filter) {
     }
   }
 
+  if (filter.type === "date") {
+    const left = new Date(rowValue).getTime();
+    const right = new Date(filter.value).getTime();
+
+    if (Number.isNaN(left) || Number.isNaN(right)) {
+      return false;
+    }
+
+    switch (filter.operator) {
+      case "eq":
+        return left === right;
+      case "gt":
+        return left > right;
+      case "gte":
+        return left >= right;
+      case "lt":
+        return left < right;
+      case "lte":
+        return left <= right;
+      default:
+        return true;
+    }
+  }
+
   const left = String(rowValue ?? "").toLowerCase();
   const right = String(filter.value ?? "").toLowerCase();
 
   switch (filter.operator) {
-    case "contains":
-      return left.includes(right);
     case "equals":
       return left === right;
+    case "contains":
+      return left.includes(right);
     case "starts":
       return left.startsWith(right);
     default:
@@ -543,7 +623,7 @@ function applyFilters() {
   renderTable(rows, enabledColumns);
 
   resultsSummary.textContent =
-    `${rows.length} row(s) • ${chosenPlayers.length || "All"} player selection • ${enabledColumns.length} visible column(s)`;
+    `${rows.length} record(s)`;
 }
 
 function formatCell(key, value) {
@@ -577,7 +657,7 @@ function renderTable(rows, visibleColumnKeys) {
     resultsBody.innerHTML = `
       <tr>
         <td colspan="${Math.max(visibleColumns.length, 1)}" class="empty-state">
-          No rows matched the current selection.
+          ¯\\_(ツ)_/¯
         </td>
       </tr>
     `;
@@ -592,7 +672,9 @@ function renderTable(rows, visibleColumnKeys) {
 }
 
 function resetControls() {
-  selectedPlayers = new Set(players.slice(0, 2));
+  selectedPlayers = new Set(
+    players.slice(0, 2).map((player) => player.PLAYER)
+  );
   renderPlayerOptions();
 
   document.querySelector('input[name="filterMode"][value="all"]').checked = true;
@@ -601,20 +683,20 @@ function resetControls() {
     const key = card.dataset.key;
     const col = allColumns.find((c) => c.key === key);
     const enabled = !!col.default;
-  
+
     const checkbox = card.querySelector(".column-toggle");
     const filtersWrap = card.querySelector(".filters-wrap");
     const defaultMode = card.querySelector(`input[name="columnMode-${key}"][value="all"]`);
     const columnFilterMode = card.querySelector(".column-filter-mode");
-  
+
     checkbox.checked = enabled;
     card.classList.toggle("enabled", enabled);
     filtersWrap.innerHTML = "";
-  
+
     if (defaultMode) {
       defaultMode.checked = true;
     }
-  
+
     if (columnFilterMode) {
       columnFilterMode.classList.remove("visible");
     }
@@ -634,14 +716,16 @@ function initCollapsibleSettings() {
   });
 }
 
-function init() {
-  initPlayers();
-  renderColumnControls();
-  applyFilters();
+async function init() {
   initCollapsibleSettings();
 
   applyBtn.addEventListener("click", applyFilters);
   resetBtn.addEventListener("click", resetControls);
+
+  await loadConfig();
+  await loadPlayers();
+  await loadColumns();
+  applyFilters();
 }
 
 init();
