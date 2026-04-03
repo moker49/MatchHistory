@@ -1,5 +1,5 @@
 import { state, dom } from "./state.js";
-import { loadConfig, loadPlayers, loadColumns } from "./api.js";
+import { loadConfig, loadPlayers, loadColumns, loadColumnOptions } from "./api.js";
 import { buildFilteredRows, getEnabledColumns } from "./filters.js";
 import {
   renderPlayerOptions,
@@ -81,7 +81,6 @@ async function init() {
 
   try {
     await loadPlayers();
-    renderPlayerOptions();
   } catch (err) {
     console.error("Failed to load players:", err);
     showPlayerLoadError();
@@ -89,11 +88,20 @@ async function init() {
 
   try {
     await loadColumns();
-    renderColumnControls();
   } catch (err) {
     console.error("Failed to load columns:", err);
     showColumnLoadError();
   }
+
+  try {
+    await loadColumnOptions();
+  } catch (err) {
+    console.error("Failed to load columns:", err);
+    showColumnLoadError();
+  }
+
+  renderPlayerOptions();
+  renderColumnControls();
 
   applyFilters();
 }

@@ -44,6 +44,28 @@ export async function loadColumns() {
 
     state.allColumns = (data.columns || []).map((column) => ({
         ...column,
-        default: defaultSelectedColumnKeys.has(column.key)
+        default: defaultSelectedColumnKeys.has(column.key),
+        options: []
     }));
+}
+
+export async function loadColumnOptions() {
+    try {
+        const data = await fetchJson(`${getApiBaseUrl()}/api/column-options`);
+        const optionsByListName = data.options || {};
+
+        state.allColumns = state.allColumns.map((column) => ({
+            ...column,
+            options: Array.isArray(optionsByListName[column.key])
+                ? optionsByListName[column.key]
+                : []
+        }));
+    } catch (err) {
+        console.error("Failed to load column options:", err);
+
+        state.allColumns = state.allColumns.map((column) => ({
+            ...column,
+            options: []
+        }));
+    }
 }

@@ -39,6 +39,7 @@ root_logger.addHandler(file_handler)
 # =========================
 players_proc = config["procedure_select_players"]
 columns_proc = config["procedure_select_columns"]
+options_proc = config["procedure_list_options"]
 
 conn_string = f"""
     DRIVER={{{config['sql_driver']}}};
@@ -109,6 +110,35 @@ def fetch_columns():
         logging.info("Loaded %s columns.", len(columns))
         return columns
 
+def fetch_column_options():
+    logging.info("Loading column options from procedure: %s", options_proc)
+
+    with get_connection() as con:
+        cursor = con.cursor()
+        cursor.execute(f"EXEC {options_proc};")
+        rows = cursor.fetchall()
+
+        grouped_options = {}
+
+        for row in rows:
+            list_name = str(row[0]).strip() if row[0] is not None else ""
+            list_item = str(row[1]).strip() if row[1] is not None else ""
+            label = str(row[2]).strip() if row[2] is not None else list_item
+
+            if not list_name or not list_item:
+                continue
+
+            if list_name not in grouped_options:
+                grouped_options[list_name] = []
+
+            grouped_options[list_name].append({
+                "value": list_item,
+                "label": label
+            })
+
+        logging.info("Loaded options for %s list(s).", len(grouped_options))
+        return grouped_options
+    
 
 # =========================
 # ROUTES
@@ -143,7 +173,22 @@ def api_columns():
             "error": "Failed to load columns."
         }), 500
     
-
+@app.get("/api/column-options")
+def api_column_options():
+    try:
+        options = fetch_column_options()
+        return jsonify({
+            "ok": True,
+            "options": options
+        })
+    except Exception:
+        logging.exception("Failed to load column options.")
+        return jsonify({
+            "ok": False,
+            "error": "Failed to load column options."
+        }), 500
+    
+    
 # =========================
 # MAIN
 # =========================
