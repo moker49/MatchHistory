@@ -18,7 +18,7 @@ const defaultSelectedColumnKeys = new Set([
 
 const mockData = [
   {
-    PLAYER: "Efren",
+    PLAYER: "efren",
     GAME_MODE: "CLASSIC",
     CHAMPION: "Ahri",
     DATE: "2026-04-01 21:14",
@@ -84,7 +84,7 @@ const mockData = [
     WARDS_KILLED: 0
   },
   {
-    PLAYER: "Efren",
+    PLAYER: "efren",
     GAME_MODE: "CLASSIC",
     CHAMPION: "Jinx",
     DATE: "2026-03-31 20:01",
@@ -301,30 +301,37 @@ function renderColumnControls() {
     card.dataset.key = column.key;
     card.dataset.type = column.type;
 
+    const supportsFilters = column.key !== "PLAYER";
+
     card.innerHTML = `
-      <div class="column-top">
-        <label class="toggle">
-          <input type="checkbox" class="column-toggle" ${column.default ? "checked" : ""} />
-          <span>${column.label}</span>
-        </label>
-        <span class="column-type">${column.type}</span>
-      </div>
+  <div class="column-top">
+    <label class="toggle">
+      <input type="checkbox" class="column-toggle" ${column.default ? "checked" : ""} />
+      <span>${column.label}</span>
+    </label>
+    <span class="column-type">${column.type}</span>
+  </div>
 
-      <div class="column-filter-mode">
-        <label class="segment small-segment">
-          <input type="radio" name="columnMode-${column.key}" value="all" checked />
-          <span>AND</span>
-        </label>
-        <label class="segment small-segment">
-          <input type="radio" name="columnMode-${column.key}" value="any" />
-          <span>OR</span>
-        </label>
-      </div>
+  ${supportsFilters
+        ? `
+        <div class="column-filter-mode">
+          <label class="segment small-segment">
+            <input type="radio" name="columnMode-${column.key}" value="all" checked />
+            <span>AND</span>
+          </label>
+          <label class="segment small-segment">
+            <input type="radio" name="columnMode-${column.key}" value="any" />
+            <span>OR</span>
+          </label>
+        </div>
 
-      <div class="filters-wrap"></div>
+        <div class="filters-wrap"></div>
 
-      <button type="button" class="add-filter-btn">+ Add filter</button>
-    `;
+        <button type="button" class="add-filter-btn">+ Add filter</button>
+      `
+        : ""
+      }
+`;
 
     const checkbox = card.querySelector(".column-toggle");
     const filtersWrap = card.querySelector(".filters-wrap");
@@ -334,20 +341,26 @@ function renderColumnControls() {
     function setEnabled(enabled) {
       checkbox.checked = enabled;
       card.classList.toggle("enabled", enabled);
+      updateColumnFilterModeVisibility();
     }
 
     function updateColumnFilterModeVisibility() {
+      if (!supportsFilters || !columnFilterMode || !filtersWrap) return;
+
       const filterCount = filtersWrap.querySelectorAll(".filter-row").length;
-      columnFilterMode.classList.toggle("visible", filterCount >= 2);
+      const isEnabled = checkbox.checked;
+
+      columnFilterMode.classList.toggle("visible", isEnabled && filterCount >= 2);
     }
 
     function createFilterRow(operatorValue = "", inputValue = "") {
+      if (!supportsFilters) return;
+
       const row = document.createElement("div");
       row.className = "filter-row";
 
       const operatorOptions = getOperatorOptions(column.type);
       const resolvedOperator = operatorValue || operatorOptions[0].value;
-      const isFixedOperatorType = false; // column.type === "select" || column.type === "boolean";
 
       const ops = operatorOptions
         .map((op) => `
@@ -357,21 +370,43 @@ function renderColumnControls() {
     `)
         .join("");
 
+      let valueControlHtml = "";
+
+      if (column.type === "boolean") {
+        valueControlHtml = `
+      <select class="filter-input">
+        <option value="">select...</option>
+        <option value="True" ${inputValue === "True" ? "selected" : ""}>True</option>
+        <option value="False" ${inputValue === "False" ? "selected" : ""}>False</option>
+      </select>
+    `;
+      } else if (column.type === "select" && Array.isArray(column.options) && column.options.length > 0) {
+        valueControlHtml = `
+      <select class="filter-input">
+        <option value="">select...</option>
+        ${column.options.map((option) => {
+          const value = typeof option === "string" ? option : option.value;
+          const label = typeof option === "string" ? option : (option.label ?? option.value);
+          return `<option value="${value}" ${inputValue === value ? "selected" : ""}>${label}</option>`;
+        }).join("")}
+      </select>
+    `;
+      } else {
+        valueControlHtml = `
+      <input
+        class="filter-input"
+        type="${column.type === "number" ? "number" : column.type === "date" ? "date" : "text"}"
+        placeholder="value"
+        value="${inputValue}"
+      />
+    `;
+      }
+
       row.innerHTML = `
-    ${isFixedOperatorType
-          ? `<input type="hidden" class="filter-select" value="${resolvedOperator}" />`
-          : `
-          <select class="filter-select">
+     <select class="filter-select">
             ${ops}
           </select>
-        `
-        }
-    <input
-      class="filter-input"
-      type="${column.type === "number" ? "number" : column.type === "date" ? "date" : "text"}"
-      placeholder="value"
-      value="${inputValue}"
-    />
+    ${valueControlHtml}
     <button type="button" class="remove-filter-btn">x</button>
   `;
 
@@ -423,19 +458,21 @@ function renderColumnControls() {
       setEnabled(!checkbox.checked);
     });
 
-    addFilterBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
+    if (supportsFilters && addFilterBtn) {
+      addFilterBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
 
-      if (!checkbox.checked) {
-        setEnabled(true);
-      }
+        if (!checkbox.checked) {
+          setEnabled(true);
+        }
 
-      createFilterRow();
-    });
+        createFilterRow();
+      });
 
-    columnFilterMode.addEventListener("click", (event) => {
-      event.stopPropagation();
-    });
+      columnFilterMode.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+    }
 
     updateColumnFilterModeVisibility();
 
@@ -497,6 +534,7 @@ function getActiveFilters() {
 
   return cards
     .filter((card) => card.querySelector(".column-toggle").checked)
+    .filter((card) => card.dataset.key !== "PLAYER")
     .map((card) => {
       const key = card.dataset.key;
       const type = card.dataset.type;
@@ -505,8 +543,15 @@ function getActiveFilters() {
       const mode = modeInput ? modeInput.value : "all";
 
       const filters = rows.map((row) => {
-        const operator = row.querySelector(".filter-select").value;
-        const rawValue = row.querySelector(".filter-input").value.trim();
+        const operatorInput = row.querySelector(".filter-select");
+        const valueInput = row.querySelector(".filter-input");
+
+        if (!operatorInput || !valueInput) {
+          return null;
+        }
+
+        const operator = operatorInput.value;
+        const rawValue = valueInput.value.trim();
 
         if (!operator || rawValue === "") return null;
 
@@ -583,8 +628,6 @@ function matchesFilter(rowValue, filter) {
       return left === right;
     case "contains":
       return left.includes(right);
-    case "starts":
-      return left.startsWith(right);
     default:
       return true;
   }
@@ -691,7 +734,10 @@ function resetControls() {
 
     checkbox.checked = enabled;
     card.classList.toggle("enabled", enabled);
-    filtersWrap.innerHTML = "";
+
+    if (filtersWrap) {
+      filtersWrap.innerHTML = "";
+    }
 
     if (defaultMode) {
       defaultMode.checked = true;
