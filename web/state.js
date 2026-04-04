@@ -10,7 +10,7 @@ export const defaultSelectedColumnKeys = new Set([
     "GAME_MODE",
     "CHAMPION",
     "DATE",
-    "WIN",
+    "RESULT",
     "KILLS",
     "DEATHS",
     "ASSISTS"

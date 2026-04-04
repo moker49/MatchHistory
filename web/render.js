@@ -272,8 +272,10 @@ export function renderColumnControls() {
   });
 }
 
-export function formatCell(key, value) {
-  if (key === "WIN") {
+export function formatCell(column, value) {
+  const key = column.key;
+
+  if (key === "RESULT") {
     if (value === "True") {
       return `<span class="badge-win">Win</span>`;
     } else if (value === "False") {
@@ -289,6 +291,41 @@ export function formatCell(key, value) {
     const minutes = Math.floor(Number(value) / 60);
     const seconds = Number(value) % 60;
     return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  if (column.type === "select" && Array.isArray(column.options) && column.options.length > 0) {
+    const match = column.options.find((option) => {
+      const optionValue = typeof option === "string" ? option : option.value;
+      return String(optionValue) === String(value);
+    });
+
+    if (match) {
+      const label = typeof match === "string" ? match : (match.label ?? match.value);
+      return escapeHtml(label);
+    }
+  }
+
+  if (key === "DATE") {
+    const date = new Date(String(value).replace(" ", "T"));
+
+    if (Number.isNaN(date.getTime())) {
+      return escapeHtml(value);
+    }
+
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+
+    const parts = formatter.formatToParts(date);
+
+    const get = (type) => parts.find(p => p.type === type)?.value ?? "";
+
+    return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}${get("dayPeriod").toLowerCase()}`;
   }
 
   return escapeHtml(value);
@@ -318,7 +355,7 @@ export function renderTable(rows, visibleColumnKeys) {
 
   dom.resultsBody.innerHTML = rows.map((row) => `
     <tr>
-      ${visibleColumns.map((col) => `<td>${formatCell(col.key, row[col.key])}</td>`).join("")}
+      ${visibleColumns.map((col) => `<td>${formatCell(col, row[col.key])}</td>`).join("")}
     </tr>
   `).join("");
 }
