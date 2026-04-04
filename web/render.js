@@ -287,6 +287,42 @@ export function formatCell(column, value) {
     }
   }
 
+  if (key === "FIRST_BLOOD") {
+    if (value === "True") {
+      return `<span class="badge-win">Yes</span>`;
+    } else if (value === "False") {
+      return `<span class="badge-loss">No</span>`;
+    } else if (value === "Assist") {
+      return `<span class="badge-win">Assist</span>`;
+    } else {
+      return `<span class="badge-unknown">Unknown</span>`;
+    }
+  }
+
+  if (key === "FIRST_TOWER") {
+    if (value === "True") {
+      return `<span class="badge-win">Yes</span>`;
+    } else if (value === "False") {
+      return `<span class="badge-loss">No</span>`;
+    } else if (value === "Assist") {
+      return `<span class="badge-win">Assist</span>`;
+    } else {
+      return `<span class="badge-unknown">Unknown</span>`;
+    }
+  }
+
+  if (key === "SURRENDER") {
+    if (value === "True") {
+      return `<span class="badge-loss">Yes</span>`;
+    } else if (value === "False") {
+      return `<span class="badge-win">No</span>`;
+    } else if (value === "Early") {
+      return `<span class="badge-loss">Early</span>`;
+    } else {
+      return `<span class="badge-unknown">Unknown</span>`;
+    }
+  }
+
   if (key === "DURATION") {
     const minutes = Math.floor(Number(value) / 60);
     const seconds = Number(value) % 60;
