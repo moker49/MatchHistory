@@ -1,4 +1,10 @@
 import { state, defaultSelectedColumnKeys } from "./state.js";
+import {
+    getSelectedPlayers,
+    getGlobalFilterMode,
+    getEnabledColumns,
+    getActiveFilters
+} from "./filters.js";
 
 async function fetchJson(url) {
     const response = await fetch(url);
@@ -35,7 +41,7 @@ export async function loadPlayers() {
 
     state.players = data.players || [];
     state.selectedPlayers = new Set(
-        state.players.slice(0, 2).map((player) => player.PLAYER)
+        state.players.map((player) => player.PUUID)
     );
 }
 
@@ -68,4 +74,33 @@ export async function loadColumnOptions() {
             options: []
         }));
     }
+}
+
+export function buildSearchRequest({ page = 1, pageSize = 100 } = {}) {
+    return {
+        players: getSelectedPlayers(),
+        visible_columns: getEnabledColumns(),
+        filter_mode: getGlobalFilterMode(),
+        filters: getActiveFilters(),
+        page,
+        page_size: pageSize
+    };
+}
+
+export async function searchMatches(searchRequest) {
+    const response = await fetch(`${getApiBaseUrl()}/api/matches/search`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(searchRequest)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+    }
+
+    return data;
 }

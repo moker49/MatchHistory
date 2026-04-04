@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import json
 import logging
@@ -40,6 +40,7 @@ root_logger.addHandler(file_handler)
 players_proc = config["procedure_select_players"]
 columns_proc = config["procedure_select_columns"]
 options_proc = config["procedure_list_options"]
+search_matches_proc = config["procedure_search_matches"]
 
 conn_string = f"""
     DRIVER={{{config['sql_driver']}}};
@@ -83,7 +84,8 @@ def fetch_players():
 
         logging.info("Loaded %s players.", len(players))
         return players
-    
+
+
 def fetch_columns():
     logging.info("Loading columns from procedure: %s", columns_proc)
 
@@ -109,6 +111,7 @@ def fetch_columns():
 
         logging.info("Loaded %s columns.", len(columns))
         return columns
+
 
 def fetch_column_options():
     logging.info("Loading column options from procedure: %s", options_proc)
@@ -138,7 +141,134 @@ def fetch_column_options():
 
         logging.info("Loaded options for %s list(s).", len(grouped_options))
         return grouped_options
-    
+
+
+def parse_match_search_request(payload):
+    payload = payload or {}
+
+    players = payload.get("players", [])
+    visible_columns = payload.get("visible_columns", [])
+    filter_mode = str(payload.get("filter_mode", "all")).lower()
+    filters = payload.get("filters", [])
+
+    try:
+        page = int(payload.get("page", 1))
+    except (TypeError, ValueError):
+        page = 1
+
+    try:
+        page_size = int(payload.get("page_size", 100))
+    except (TypeError, ValueError):
+        page_size = 100
+
+    if page < 1:
+        page = 1
+
+    if page_size < 1:
+        page_size = 1
+    elif page_size > 500:
+        page_size = 500
+
+    if filter_mode not in ("all", "any"):
+        filter_mode = "all"
+
+    if not isinstance(players, list):
+        players = []
+
+    if not isinstance(visible_columns, list):
+        visible_columns = []
+
+    if not isinstance(filters, list):
+        filters = []
+
+    # optional cleanup / normalization
+    players = [str(x).strip() for x in players if str(x).strip()]
+    visible_columns = [str(x).strip() for x in visible_columns if str(x).strip()]
+
+    return {
+        "players": players,
+        "visible_columns": visible_columns,
+        "filter_mode": filter_mode,
+        "filters": filters,
+        "page": page,
+        "page_size": page_size
+    }
+
+
+def row_to_dict(columns, row):
+    result = {}
+
+    for index, column_name in enumerate(columns):
+        value = row[index]
+
+        # jsonify can handle None/int/float/bool/str fine.
+        # Convert anything else to string as a safe fallback.
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            result[column_name] = value
+        else:
+            result[column_name] = str(value)
+
+    return result
+
+
+def search_matches(search_request):
+    logging.info(
+        "Searching matches | page=%s | page_size=%s | players=%s | visible_columns=%s | filters=%s | filter_mode=%s",
+        search_request["page"],
+        search_request["page_size"],
+        len(search_request["players"]),
+        len(search_request["visible_columns"]),
+        len(search_request["filters"]),
+        search_request["filter_mode"]
+    )
+
+    search_json = json.dumps(search_request, ensure_ascii=False)
+
+    with get_connection() as con:
+        cursor = con.cursor()
+
+        cursor.execute(f"""
+            EXEC {search_matches_proc}
+                @search_json = ?
+        """, (search_json,))
+
+        # First result set: page rows
+        rows = cursor.fetchall()
+        row_columns = [col[0] for col in cursor.description] if cursor.description else []
+        result_rows = []
+        for row in rows:
+            result_row = {}
+            for i, col in enumerate(row_columns):
+                value = row[i]
+                result_row[str(col).upper()] = value
+            result_rows.append(result_row)
+
+        # Second result set: total_count
+        total_count = 0
+        if cursor.nextset():
+            total_row = cursor.fetchone()
+            if total_row and total_row[0] is not None:
+                total_count = int(total_row[0])
+
+    total_pages = 0
+    if total_count > 0:
+        total_pages = (total_count + search_request["page_size"] - 1) // search_request["page_size"]
+
+    logging.info(
+        "Match search complete | returned_rows=%s | total_count=%s | total_pages=%s",
+        len(result_rows),
+        total_count,
+        total_pages
+    )
+
+    return {
+        "rows": result_rows,
+        "total_count": total_count,
+        "page": search_request["page"],
+        "page_size": search_request["page_size"],
+        "total_pages": total_pages
+    }
+
 
 # =========================
 # ROUTES
@@ -158,6 +288,7 @@ def api_players():
             "error": "Failed to load players."
         }), 500
 
+
 @app.get("/api/columns")
 def api_columns():
     try:
@@ -172,7 +303,8 @@ def api_columns():
             "ok": False,
             "error": "Failed to load columns."
         }), 500
-    
+
+
 @app.get("/api/column-options")
 def api_column_options():
     try:
@@ -187,8 +319,31 @@ def api_column_options():
             "ok": False,
             "error": "Failed to load column options."
         }), 500
-    
-    
+
+
+@app.post("/api/matches/search")
+def api_matches_search():
+    try:
+        payload = request.get_json(silent=True) or {}
+        search_request = parse_match_search_request(payload)
+        result = search_matches(search_request)
+
+        return jsonify({
+            "ok": True,
+            "rows": result["rows"],
+            "total_count": result["total_count"],
+            "page": result["page"],
+            "page_size": result["page_size"],
+            "total_pages": result["total_pages"]
+        })
+    except Exception:
+        logging.exception("Failed to search matches.")
+        return jsonify({
+            "ok": False,
+            "error": "Failed to search matches."
+        }), 500
+
+
 # =========================
 # MAIN
 # =========================

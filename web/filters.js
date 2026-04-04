@@ -1,4 +1,4 @@
-import { state, mockData } from "./state.js";
+import { state } from "./state.js";
 
 export function getOperatorOptions(type) {
     if (type === "number" || type === "date") {
@@ -128,7 +128,7 @@ export function buildFilteredRows() {
     const globalFilterMode = getGlobalFilterMode();
     const activeFilters = getActiveFilters();
 
-    let rows = [...mockData];
+    let rows = [];
 
     if (chosenPlayers.length > 0) {
         rows = rows.filter((row) => chosenPlayers.includes(row.PLAYER));
