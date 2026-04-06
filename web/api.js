@@ -17,21 +17,6 @@ async function fetchJson(url) {
     return data;
 }
 
-export async function loadConfig() {
-    try {
-        const response = await fetch("config.json");
-        state.CONFIG = await response.json();
-    } catch (err) {
-        console.error("Failed to load config.json:", err);
-
-        state.CONFIG = {
-            api_host: "127.0.0.1",
-            api_port: 5001,
-            api_debug: true
-        };
-    }
-}
-
 export function getApiBaseUrl() {
     //return `http://${state.CONFIG.api_host}:${state.CONFIG.api_port}`;
     return "";

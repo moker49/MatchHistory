@@ -54,7 +54,7 @@ conn_string = f"""
 
 api_host = config.get("api_host", "127.0.0.1")
 api_port = int(config.get("api_port", 5001))
-api_debug = bool(config.get("api_debug", True))
+api_debug = bool(config.get("api_debug", False))
 
 
 # =========================

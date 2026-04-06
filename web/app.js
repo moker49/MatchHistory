@@ -1,6 +1,5 @@
 import { state, dom } from "./state.js";
 import {
-  loadConfig,
   loadPlayers,
   loadColumns,
   loadColumnOptions,
@@ -168,8 +167,6 @@ async function init() {
 
   dom.applyBtn.addEventListener("click", () => applyFilters(1));
   dom.resetBtn.addEventListener("click", resetControls);
-
-  await loadConfig();
 
   try {
     await loadPlayers();
