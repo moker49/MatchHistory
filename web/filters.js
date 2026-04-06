@@ -13,7 +13,8 @@ export function getOperatorOptions(type) {
 
     if (type === "select" || type === "boolean") {
         return [
-            { value: "equals", label: "is" }
+            { value: "equals", label: "is" },
+            { value: "not", label: "is not" }
         ];
     }
 
