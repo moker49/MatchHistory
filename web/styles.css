@@ -589,6 +589,21 @@ table {
   color: var(--accent);
 }
 
+.date-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.date-main {
+  color: var(--text);
+}
+
+.date-time {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
 thead {
   background: var(--surface-3);
   position: sticky;

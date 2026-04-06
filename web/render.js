@@ -277,6 +277,31 @@ export function renderColumnControls() {
   });
 }
 
+function formatDateCell(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (isNaN(date)) return value;
+
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const year = date.getFullYear();
+
+  const datePart = `${month}-${day}-${year}`;
+
+  const timePart = date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).toLowerCase();
+
+  return `
+    <span class="date-cell">
+      <span class="date-main">${datePart}</span>
+      <span class="date-time">${timePart}</span>
+    </span>
+  `;
+}
+
 export function formatCell(column, value) {
   const key = column.key;
 
@@ -346,27 +371,8 @@ export function formatCell(column, value) {
     }
   }
 
-  if (key === "DATE") {
-    const date = new Date(String(value).replace(" ", "T"));
-
-    if (Number.isNaN(date.getTime())) {
-      return escapeHtml(value);
-    }
-
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    });
-
-    const parts = formatter.formatToParts(date);
-
-    const get = (type) => parts.find(p => p.type === type)?.value ?? "";
-
-    return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}${get("dayPeriod").toLowerCase()}`;
+  if (column.key === "DATE") {
+    return formatDateCell(value);
   }
 
   return escapeHtml(value);
