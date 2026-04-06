@@ -153,6 +153,8 @@ def parse_match_search_request(payload):
     visible_columns = payload.get("visible_columns", [])
     filter_mode = str(payload.get("filter_mode", "all")).lower()
     filters = payload.get("filters", [])
+    sort_key = payload.get("sort_key")
+    sort_direction = str(payload.get("sort_direction", "desc")).lower()
 
     try:
         page = int(payload.get("page", 1))
@@ -184,9 +186,16 @@ def parse_match_search_request(payload):
     if not isinstance(filters, list):
         filters = []
 
-    # optional cleanup / normalization
     players = [str(x).strip() for x in players if str(x).strip()]
     visible_columns = [str(x).strip() for x in visible_columns if str(x).strip()]
+
+    if sort_direction not in ("asc", "desc"):
+        sort_direction = "desc"
+
+    if sort_key is not None:
+        sort_key = str(sort_key).strip().upper()
+        if not sort_key:
+            sort_key = None
 
     return {
         "players": players,
@@ -194,7 +203,9 @@ def parse_match_search_request(payload):
         "filter_mode": filter_mode,
         "filters": filters,
         "page": page,
-        "page_size": page_size
+        "page_size": page_size,
+        "sort_key": sort_key,
+        "sort_direction": sort_direction if sort_key else None
     }
 
 
@@ -216,13 +227,15 @@ def row_to_dict(columns, row):
 
 def search_matches(search_request):
     logging.info(
-        "Searching matches | page=%s | page_size=%s | players=%s | visible_columns=%s | filters=%s | filter_mode=%s",
+        "Searching matches | page=%s | page_size=%s | players=%s | visible_columns=%s | filters=%s | filter_mode=%s | sort=%s %s",
         search_request["page"],
         search_request["page_size"],
         len(search_request["players"]),
         len(search_request["visible_columns"]),
         len(search_request["filters"]),
-        search_request["filter_mode"]
+        search_request["filter_mode"],
+        search_request.get("sort_key"),
+        search_request.get("sort_direction")
     )
 
     search_json = json.dumps(search_request, ensure_ascii=False)
