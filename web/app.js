@@ -61,11 +61,11 @@ async function applyFilters(page = 1) {
 
     const totalCount = result.total_count ?? 0;
     const formattedTotal = totalCount.toLocaleString();
-    dom.resultsSummary.textContent = `${formattedTotal} matches`;
+    dom.resultsSummary.textContent = `${formattedTotal} records`;
     
     updatePaginationUi();
   } catch (err) {
-    console.error("Failed to search matches:", err);
+    console.error("Failed to load matches:", err);
     renderTable([], enabledColumns);
     dom.resultsSummary.textContent = "Failed to load matches";
     state.currentPage = 1;

@@ -272,16 +272,19 @@ def search_matches(search_request):
         "total_pages": total_pages
     }
 
-def is_rate_limited(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECONDS):
+def wait_for_rate_limit(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECONDS):
     now = time.time()
     last_seen = _last_request_by_ip.get(key)
 
-    if last_seen is not None and (now - last_seen) < window_seconds:
-        retry_after = max(1, int(window_seconds - (now - last_seen)))
-        return True, retry_after
+    if last_seen is not None:
+        elapsed = now - last_seen
+        remaining = window_seconds - elapsed
 
-    _last_request_by_ip[key] = now
-    return False, 0
+        if remaining > 0:
+            logging.info("Rate limit hit for %s. Sleeping %.2fs", key, remaining)
+            time.sleep(remaining)
+
+    _last_request_by_ip[key] = time.time()
 
 
 # =========================
@@ -340,12 +343,7 @@ def api_matches_search():
     client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
     rate_key = f"matches_search:{client_ip}"
                 
-    limited, retry_after = is_rate_limited(rate_key, window_seconds=2.0)
-    if limited:
-        return jsonify({
-            "ok": False,
-            "error": "Too many requests. Please wait a moment and try again."
-        }), 429
+    wait_for_rate_limit(rate_key, window_seconds=2.0)
 
     try:
         payload = request.get_json(silent=True) or {}
