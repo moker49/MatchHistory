@@ -550,6 +550,45 @@ table {
   min-width: 900px;
 }
 
+.table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.table-sort-btn:hover {
+  color: var(--text);
+}
+
+.table-sort-btn.active {
+  color: var(--text);
+}
+
+.table-sort-label {
+  display: inline-block;
+}
+
+.table-sort-indicator {
+  display: inline-block;
+  min-width: 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8em;
+}
+
+.table-sort-btn.active .table-sort-indicator {
+  color: var(--accent);
+}
+
 thead {
   background: var(--surface-3);
   position: sticky;

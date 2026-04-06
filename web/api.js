@@ -63,13 +63,18 @@ export async function loadColumnOptions() {
 }
 
 export function buildSearchRequest({ page = 1, pageSize = 100 } = {}) {
+    const sortKey = state.sort?.key || null;
+    const sortDirection = state.sort?.direction === "asc" ? "asc" : "desc";
+
     return {
         players: getSelectedPlayers(),
         visible_columns: getEnabledColumns(),
         filter_mode: getGlobalFilterMode(),
         filters: getActiveFilters(),
         page,
-        page_size: pageSize
+        page_size: pageSize,
+        sort_key: sortKey,
+        sort_direction: sortKey ? sortDirection : null
     };
 }
 

@@ -1,6 +1,11 @@
 import { state, dom } from "./state.js";
 import { getOperatorOptions } from "./filters.js";
 
+let sortChangedHandler = null;
+export function setSortChangedHandler(handler) {
+  sortChangedHandler = typeof handler === "function" ? handler : null;
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -367,16 +372,90 @@ export function formatCell(column, value) {
   return escapeHtml(value);
 }
 
+function isSortableColumn(column) {
+  return column.type === "number" || column.type === "date";
+}
+
+function getSortIndicator(column) {
+  if (!isSortableColumn(column)) {
+    return "";
+  }
+
+  if (state.sort.key !== column.key) {
+    return "⇅";
+  }
+
+  return state.sort.direction === "asc" ? "▲" : "▼";
+}
+
+function toggleSort(column) {
+  if (!isSortableColumn(column)) {
+    return;
+  }
+
+  if (state.sort.key === column.key) {
+    state.sort.direction = state.sort.direction === "asc" ? "desc" : "asc";
+  } else {
+    state.sort.key = column.key;
+    state.sort.direction = "desc";
+  }
+
+  renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []);
+  
+  if (sortChangedHandler) { 
+    sortChangedHandler({
+      key: state.sort.key,
+      direction: state.sort.direction
+    });
+  }
+}
+
 export function renderTable(rows, visibleColumnKeys) {
+  state.lastRows = rows;
+  state.lastVisibleColumnKeys = visibleColumnKeys;
+
   const visibleColumns = state.allColumns.filter((col) =>
     visibleColumnKeys.includes(col.key)
   );
 
   dom.resultsHead.innerHTML = `
     <tr>
-      ${visibleColumns.map((col) => `<th>${escapeHtml(col.label)}</th>`).join("")}
+      ${visibleColumns.map((col) => {
+        const sortable = isSortableColumn(col);
+        const isActiveSort = state.sort.key === col.key;
+        const indicator = getSortIndicator(col);
+
+        if (!sortable) {
+          return `<th>${escapeHtml(col.label)}</th>`;
+        }
+
+        return `
+          <th>
+            <button
+              type="button"
+              class="table-sort-btn ${isActiveSort ? "active" : ""}"
+              data-sort-key="${escapeHtml(col.key)}"
+              aria-label="Sort by ${escapeHtml(col.label)} ${isActiveSort ? state.sort.direction : "ascending"}"
+            >
+              <span class="table-sort-label">${escapeHtml(col.label)}</span>
+              <span class="table-sort-indicator" aria-hidden="true">${indicator}</span>
+            </button>
+          </th>
+        `;
+      }).join("")}
     </tr>
   `;
+
+  dom.resultsHead.querySelectorAll(".table-sort-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const columnKey = button.dataset.sortKey;
+      const column = state.allColumns.find((col) => col.key === columnKey);
+
+      if (column) {
+        toggleSort(column);
+      }
+    });
+  });
 
   if (rows.length === 0) {
     dom.resultsBody.innerHTML = `

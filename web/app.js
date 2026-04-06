@@ -12,7 +12,8 @@ import {
   renderColumnControls,
   renderTable,
   showPlayerLoadError,
-  showColumnLoadError
+  showColumnLoadError,
+  setSortChangedHandler
 } from "./render.js";
 
 function updatePaginationUi() {
@@ -32,9 +33,30 @@ function updatePaginationUi() {
   }
 }
 
+let latestRequestId = 0;
+let sortRefreshTimer = null;
+const SORT_REFRESH_DEBOUNCE_MS = 1000;
+
+function cancelScheduledSortRefresh() {
+  if (sortRefreshTimer !== null) {
+    window.clearTimeout(sortRefreshTimer);
+    sortRefreshTimer = null;
+  }
+}
+
+function scheduleSortRefresh() {
+  cancelScheduledSortRefresh();
+
+  sortRefreshTimer = window.setTimeout(() => {
+    sortRefreshTimer = null;
+    applyFilters(1);
+  }, SORT_REFRESH_DEBOUNCE_MS);
+}
+
 async function applyFilters(page = 1) {
   const enabledColumns = getEnabledColumns();
   const requestedPage = Math.max(1, Number(page) || 1);
+  const requestId = ++latestRequestId;
 
   try {
     dom.applyBtn.disabled = true;
@@ -52,6 +74,10 @@ async function applyFilters(page = 1) {
 
     const result = await searchMatches(searchRequest);
 
+    if (requestId !== latestRequestId) {
+      return;
+    }
+
     state.currentPage = Math.max(1, Number(result.page) || requestedPage);
     state.totalPages = Math.max(1, Number(result.total_pages) || 1);
     state.totalCount = Math.max(0, Number(result.total_count) || 0);
@@ -64,6 +90,10 @@ async function applyFilters(page = 1) {
     
     updatePaginationUi();
   } catch (err) {
+    if (requestId !== latestRequestId) {
+      return;
+    }
+
     console.error("Failed to load matches:", err);
     renderTable([], enabledColumns);
     dom.resultsSummary.textContent = "Failed to load matches";
@@ -72,6 +102,10 @@ async function applyFilters(page = 1) {
     state.totalCount = 0;
     updatePaginationUi();
   } finally {
+    if (requestId !== latestRequestId) {
+      return;
+    }
+
     dom.applyBtn.disabled = false;
     dom.applyBtn.textContent = "Refresh";
 
@@ -89,6 +123,8 @@ function resetControls() {
   state.currentPage = 1;
   state.totalPages = 1;
   state.totalCount = 0;
+  state.sort.key = "DATE";
+  state.sort.direction = "desc";
 
   renderPlayerOptions();
 
@@ -127,6 +163,7 @@ function resetControls() {
   });
 
   updatePaginationUi();
+  cancelScheduledSortRefresh();
   applyFilters(1);
 }
 
@@ -157,6 +194,7 @@ function initPagination() {
     );
 
     dom.pageNumberInput.value = String(safePage);
+    cancelScheduledSortRefresh();
     applyFilters(safePage);
   });
 }
@@ -165,7 +203,10 @@ async function init() {
   initCollapsibleSettings();
   initPagination();
 
-  dom.applyBtn.addEventListener("click", () => applyFilters(1));
+  dom.applyBtn.addEventListener("click", () => {
+    cancelScheduledSortRefresh();
+    applyFilters(1);
+  });
   dom.resetBtn.addEventListener("click", resetControls);
 
   try {
@@ -191,6 +232,11 @@ async function init() {
 
   renderPlayerOptions();
   renderColumnControls();
+
+  setSortChangedHandler(() => {
+    state.currentPage = 1;
+    scheduleSortRefresh();
+  });
 
   await applyFilters(1);
 }
