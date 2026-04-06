@@ -4,7 +4,10 @@ import json
 import logging
 import pypyodbc as odbc
 from logging.handlers import RotatingFileHandler
+import time
 
+RATE_LIMIT_WINDOW_SECONDS = 2.0
+_last_request_by_ip = {}
 app = Flask(__name__)
 CORS(app)
 
@@ -25,7 +28,7 @@ console_handler.setFormatter(log_formatter)
 root_logger.addHandler(console_handler)
 
 file_handler = RotatingFileHandler(
-    "matchhistory_api.log",
+    "server.log",
     maxBytes=1_048_576,
     backupCount=1,
     encoding="utf-8"
@@ -269,6 +272,17 @@ def search_matches(search_request):
         "total_pages": total_pages
     }
 
+def is_rate_limited(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECONDS):
+    now = time.time()
+    last_seen = _last_request_by_ip.get(key)
+
+    if last_seen is not None and (now - last_seen) < window_seconds:
+        retry_after = max(1, int(window_seconds - (now - last_seen)))
+        return True, retry_after
+
+    _last_request_by_ip[key] = now
+    return False, 0
+
 
 # =========================
 # ROUTES
@@ -323,6 +337,16 @@ def api_column_options():
 
 @app.post("/api/matches/search")
 def api_matches_search():
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    rate_key = f"matches_search:{client_ip}"
+                
+    limited, retry_after = is_rate_limited(rate_key, window_seconds=2.0)
+    if limited:
+        return jsonify({
+            "ok": False,
+            "error": "Too many requests. Please wait a moment and try again."
+        }), 429
+
     try:
         payload = request.get_json(silent=True) or {}
         search_request = parse_match_search_request(payload)

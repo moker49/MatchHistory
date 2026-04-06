@@ -33,7 +33,8 @@ export async function loadConfig() {
 }
 
 export function getApiBaseUrl() {
-    return `http://${state.CONFIG.api_host}:${state.CONFIG.api_port}`;
+    //return `http://${state.CONFIG.api_host}:${state.CONFIG.api_port}`;
+    return "";
 }
 
 export async function loadPlayers() {

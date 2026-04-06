@@ -5,13 +5,14 @@
     "sql_driver": "sql server",
     "sql_server": "EFREN-PC\\SQLEXPRESS",
     "sql_db": "MatchHistory",
+	"loop_interval_minutes": 360,
     "procedure_insert": "MATCH_I_V1",
     "procedure_puuids": "PLAYER_SALL_V1",
     "procedure_select_all_for_player": "MATCH_S_ID_BY_PUUID_V1",
     "procedure_insert_ghost": "MATCH_I_GHOST_V1",
     "procedure_select_missing_game_modes": "INCOMPLETE_GAME_MODES_V1",
     "procedure_select_players": "PLAYER_SALL_V1",
-    "procedure_select_columns": "COLUMNS_S_ALL_V1",
+    "procedure_select_columns": "COLUMNS_S_V1",
     "procedure_list_options": "LIST_OPTIONS_V1",
     "procedure_search_matches": "SEARCH_V1"
 }

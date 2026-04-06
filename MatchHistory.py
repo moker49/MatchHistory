@@ -413,5 +413,31 @@ def main():
 
     logging.info("All inserts done.")
 
+def run_forever():
+    loop_interval_minutes = config.get("loop_interval_minutes", 15)
+
+    while True:
+        start_time = time.time()
+        try:
+            main()
+        except Exception:
+            logging.exception("Fatal error in main loop")
+
+        elapsed = time.time() - start_time
+        sleep_seconds = max(0, (loop_interval_minutes * 60) - elapsed)
+
+        logging.info(
+            "===== RUN COMPLETE (%.2fs). Sleeping %.2fs =====",
+            elapsed,
+            sleep_seconds
+        )
+
+        try:
+            time.sleep(sleep_seconds)
+        except KeyboardInterrupt:
+            logging.info("Shutdown requested. Exiting loop.")
+            break
+
+
 if __name__ == "__main__":
-    main()
+    run_forever()
