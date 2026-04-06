@@ -79,11 +79,18 @@
       </section>
 
       <section class="panel table-panel">
-        <div class="panel-header">
+        <div class="panel-header results-header">
           <div>
-            <h2>Results</h2>
+            <h2>Matches</h2>
             <p id="resultsSummary">Showing mock data</p>
           </div>
+
+          <form id="paginationForm" class="pagination-nav" autocomplete="off">
+            <label class="pagination-label" for="pageNumberInput">Page</label>
+            <input id="pageNumberInput" class="pagination-input" type="number" min="1" step="1" value="1" inputmode="numeric" />
+            <span id="paginationTotal" class="pagination-total">of 1</span>
+            <button id="pageGoBtn" class="secondary-btn pagination-go-btn" type="submit">Go</button>
+          </form>
         </div>
 
         <div class="table-wrap">

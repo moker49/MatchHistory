@@ -2,7 +2,11 @@ export const state = {
     CONFIG: {},
     players: [],
     selectedPlayers: new Set(),
-    allColumns: []
+    allColumns: [],
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    pageSize: 100
 };
 
 export const defaultSelectedColumnKeys = new Set([
@@ -22,6 +26,10 @@ export const dom = {
     resultsHead: document.getElementById("resultsHead"),
     resultsBody: document.getElementById("resultsBody"),
     resultsSummary: document.getElementById("resultsSummary"),
+    paginationForm: document.getElementById("paginationForm"),
+    pageNumberInput: document.getElementById("pageNumberInput"),
+    paginationTotal: document.getElementById("paginationTotal"),
+    pageGoBtn: document.getElementById("pageGoBtn"),
     applyBtn: document.getElementById("applyBtn"),
     resetBtn: document.getElementById("resetBtn"),
     settingsToggle: document.getElementById("settingsToggle"),

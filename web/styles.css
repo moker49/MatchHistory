@@ -1,4 +1,4 @@
-:root {
+ :root {
   /* base */
   --bg: #0b1220;
   --bg-gradient-top: #09101c;
@@ -165,6 +165,49 @@ h1 {
 .help-text {
   margin: 6px 0 0;
   color: var(--muted);
+}
+
+.results-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.pagination-label,
+.pagination-total {
+  color: var(--muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pagination-input {
+  width: 84px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  text-align: right;
+}
+
+.pagination-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.12);
+}
+
+.pagination-go-btn {
+  padding: 10px 16px;
 }
 
 .panel-collapse-btn {
@@ -567,6 +610,17 @@ tbody tr:hover {
 }
 
 @media (max-width: 640px) {
+  .results-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pagination-nav {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
   .app-shell {
     width: min(100% - 20px, 1450px);
     margin: 14px auto 24px;
