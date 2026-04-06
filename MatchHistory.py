@@ -7,9 +7,6 @@ from logging.handlers import RotatingFileHandler
 # =========================
 # LOGGING
 # =========================
-with open("config.json") as json_file:
-    config = json.load(json_file)
-
 log_formatter = logging.Formatter(
     "%(asctime)s | %(levelname)s | %(message)s"
 )
@@ -38,9 +35,13 @@ root_logger.addHandler(file_handler)
 # =========================
 # CONFIG
 # =========================
+with open("config.json") as json_file:
+    config = json.load(json_file)
+with open("keys.json") as json_file:
+    keys = json.load(json_file)
 
 call_interval = config.get("call_interval", 1.2)
-api_key = config["riot_api_key"]
+api_key = keys["riot_api_key"]
 region = config["region"]
 match_count = 100
 epoch_stop = 50
