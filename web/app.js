@@ -168,13 +168,26 @@ function resetControls() {
 }
 
 function initCollapsibleSettings() {
-  dom.settingsToggle.addEventListener("click", () => {
-    const collapsed = dom.controlsPanel.classList.toggle("collapsed");
+  function setPanelOpen(isOpen) {
+    dom.controlsPanel.classList.toggle("collapsed", !isOpen);
+    dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
+    dom.settingsToggleIcon.textContent = isOpen ? "left_panel_close" : "left_panel_open";
 
-    dom.layout.classList.toggle("settings-collapsed", collapsed);
-    dom.settingsToggle.setAttribute("aria-expanded", String(!collapsed));
-    dom.settingsToggleIcon.textContent = collapsed ? "+" : "−";
+    if (dom.panelBackdrop) {
+      dom.panelBackdrop.classList.toggle("visible", isOpen);
+    }
+  }
+
+  dom.settingsToggle.addEventListener("click", () => {
+    const isCurrentlyCollapsed = dom.controlsPanel.classList.contains("collapsed");
+    setPanelOpen(isCurrentlyCollapsed);
   });
+
+  dom.panelBackdrop?.addEventListener("click", () => {
+    setPanelOpen(false);
+  });
+
+  setPanelOpen(true);
 }
 
 function initPagination() {
@@ -242,3 +255,29 @@ async function init() {
 }
 
 init();
+
+function updateScrollbarWidth() {
+  const el = document.querySelector(".controls-panel .settings-content");
+  if (!el) return;
+
+  const hasScrollbar = el.scrollHeight > el.clientHeight;
+  const scrollbarWidth = el.offsetWidth - el.clientWidth;
+
+  el.style.setProperty(
+    "--scrollbar-width",
+    hasScrollbar ? `${scrollbarWidth}px` : "0px"
+  );
+}
+
+// run once after initial render
+updateScrollbarWidth();
+
+// update on resize
+window.addEventListener("resize", updateScrollbarWidth);
+
+// update when filters panel content changes
+const observer = new ResizeObserver(updateScrollbarWidth);
+const settingsContent = document.querySelector(".controls-panel .settings-content");
+if (settingsContent) {
+  observer.observe(settingsContent);
+}

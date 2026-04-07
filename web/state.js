@@ -39,5 +39,6 @@ export const dom = {
     settingsToggle: document.getElementById("settingsToggle"),
     settingsToggleIcon: document.getElementById("settingsToggleIcon"),
     controlsPanel: document.getElementById("controlsPanel"),
+    panelBackdrop: document.getElementById("panelBackdrop"),
     layout: document.querySelector(".layout")
 };

@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Match History</title>
   <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" rel="stylesheet" />
 </head>
 
 <body>
@@ -21,12 +22,15 @@
     </header>
 
     <main class="layout">
-      <section class="panel controls-panel" id="controlsPanel">
-        <button id="settingsToggle" class="panel-collapse-btn" type="button" aria-expanded="true"
-          aria-controls="settingsContent">
-          <span>Filters</span>
-          <span id="settingsToggleIcon" class="panel-collapse-icon">−</span>
-        </button>
+		<button id="panelBackdrop" class="panel-backdrop" type="button" aria-label="Close filters"></button>
+		<section class="panel controls-panel" id="controlsPanel">
+		<div class="controls-header">
+			<h3>Filters</h3>
+			<button id="settingsToggle" class="panel-collapse-btn" type="button"
+			  aria-expanded="true" aria-controls="settingsContent">
+			  <span id="settingsToggleIcon" class="material-symbols-rounded">left_panel_close</span>
+			</button>
+		</div>
 
         <div id="settingsContent" class="settings-content">
 
