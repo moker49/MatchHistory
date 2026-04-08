@@ -281,13 +281,6 @@ def process_player(con, cursor, player_db):
 
     existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
 
-    estimated_calls = epoch_stop * match_count
-    duration = float(estimated_calls * call_interval)
-    logging.info(
-        "Estimated max duration for %s: %.2fs (%.2f min)",
-        player_name, duration, duration / 60
-    )
-
     for epoch_count in range(epoch_stop):
         match_total_count = epoch_count * match_count
         logging.info(
