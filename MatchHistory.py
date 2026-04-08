@@ -3,6 +3,40 @@ import time, json, logging
 import pypyodbc as odbc
 from logging.handlers import RotatingFileHandler
 
+# =========================
+# CONFIG
+# =========================
+with open("config.json") as json_file:
+    config = json.load(json_file)
+with open("keys.json") as json_file:
+    keys = json.load(json_file)
+
+call_interval = config.get("call_interval", 1.2)
+api_key = keys["riot_api_key"]
+region = config["region"]
+match_count = 100
+epoch_stop = 50
+
+dry_run = config.get("dry_run", 0)
+dry_run_player = config.get("dry_run_player", 'erik')
+log_level = config.get("log_level", "info")
+
+insert_proc = config["procedure_insert"]
+ghost_insert_proc = config["procedure_insert_ghost"]
+puuids_proc = config["procedure_puuids"]
+select_all_for_player_proc = config["procedure_select_all_for_player"]
+missing_game_modes_proc = config["procedure_select_missing_game_modes"]
+
+max_api_retries = config.get("max_api_retries", 5)
+
+lol_watcher = LolWatcher(api_key)
+
+conn_string = f"""
+    DRIVER={{{config['sql_driver']}}};
+    SERVER={config['sql_server']};
+    DATABASE={config['sql_db']};
+    Trust_Connection=yes;
+"""
 
 # =========================
 # LOGGING
@@ -12,7 +46,16 @@ log_formatter = logging.Formatter(
 )
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
+if (log_level == "debug"):
+    root_logger.setLevel(logging.DEBUG)
+elif (log_level == "warning"):
+    root_logger.setLevel(logging.WARNING)
+elif (log_level == "error"):
+    root_logger.setLevel(logging.ERROR)
+elif (log_level == "critical"):
+    root_logger.setLevel(logging.CRITICAL)
+else:
+    root_logger.setLevel(logging.INFO)
 
 # Clear default handlers in case script is re-run in same interpreter
 root_logger.handlers.clear()
@@ -31,37 +74,6 @@ file_handler = RotatingFileHandler(
 )
 file_handler.setFormatter(log_formatter)
 root_logger.addHandler(file_handler)
-
-# =========================
-# CONFIG
-# =========================
-with open("config.json") as json_file:
-    config = json.load(json_file)
-with open("keys.json") as json_file:
-    keys = json.load(json_file)
-
-call_interval = config.get("call_interval", 1.2)
-api_key = keys["riot_api_key"]
-region = config["region"]
-match_count = 100
-epoch_stop = 50
-
-insert_proc = config["procedure_insert"]
-ghost_insert_proc = config["procedure_insert_ghost"]
-puuids_proc = config["procedure_puuids"]
-select_all_for_player_proc = config["procedure_select_all_for_player"]
-missing_game_modes_proc = config["procedure_select_missing_game_modes"]
-
-max_api_retries = config.get("max_api_retries", 5)
-
-lol_watcher = LolWatcher(api_key)
-
-conn_string = f"""
-    DRIVER={{{config['sql_driver']}}};
-    SERVER={config['sql_server']};
-    DATABASE={config['sql_db']};
-    Trust_Connection=yes;
-"""
 
 
 # =========================
@@ -279,9 +291,20 @@ def process_player(con, cursor, player_db):
 
     logging.info("Processing player: %s", player_name)
 
+    # Dry run support: if dry_run is enabled, only process the configured dry_run_player
+    # and only run the first epoch. In dry run we do not perform any DB inserts or commits,
+    # but we still call the Riot API to demonstrate what would be done.
+    is_dry_run = bool(dry_run) and (player_name.lower() == dry_run_player.lower())
+    if dry_run and not is_dry_run:
+        logging.info("Dry run mode enabled. Skipping player %s (only running for %s).", player_name, dry_run_player)
+        return
+
     existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
 
-    for epoch_count in range(epoch_stop):
+    # If dry run for this player, only run a single epoch
+    max_epochs = 1 if is_dry_run else epoch_stop
+
+    for epoch_count in range(max_epochs):
         match_total_count = epoch_count * match_count
         logging.info(
             "%s | epoch=%s | requesting matchlist start=%s count=%s",
@@ -296,6 +319,7 @@ def process_player(con, cursor, player_db):
                 start=match_total_count,
                 count=match_count
             )
+            logging.debug("loaded matchlist = %s", match_ids)
         except Exception:
             logging.exception(
                 "%s | epoch=%s | unable to retrieve match list; skipping epoch",
@@ -336,7 +360,11 @@ def process_player(con, cursor, player_db):
                     player_name, epoch_count, match_id
                 )
                 try:
-                    insert_ghost_match(cursor, match_id, player_puuid)
+                    if is_dry_run:
+                        logging.debug("%s | epoch=%s | match_id=%s | dry run - would insert ghost row", player_name, epoch_count, match_id)
+                    else:
+                        insert_ghost_match(cursor, match_id, player_puuid)
+                        logging.debug("%s | epoch=%s | match_id=%s | inserted ghost row", player_name, epoch_count, match_id)
                     existing_match_ids.add(match_id)
                     epoch_ghost_count += 1
                 except Exception:
@@ -347,30 +375,41 @@ def process_player(con, cursor, player_db):
                 continue
 
             try:
-                insert_match_participants(cursor, match_id, current_match)
-                existing_match_ids.add(match_id)
+                if is_dry_run:
+                    logging.info("%s | epoch=%s | match_id=%s | dry run - would insert match participants", player_name, epoch_count, match_id)
+                else:
+                    insert_match_participants(cursor, match_id, current_match)
+                    logging.info("%s | epoch=%s | match_id=%s | inserted match participants", player_name, epoch_count, match_id)
                 epoch_insert_count += 1
-                logging.debug("match %s inserted", match_id)
+                existing_match_ids.add(match_id)
             except Exception:
                 logging.exception(
                     "%s | epoch=%s | match_id=%s | failed during DB insert",
                     player_name, epoch_count, match_id
                 )
-                con.rollback()
-                existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
-                logging.warning("%s | epoch=%s | match_id=%s | rollback completed", player_name, epoch_count, match_id)
+                if not is_dry_run:
+                    con.rollback()
+                    existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
+                    logging.warning("%s | epoch=%s | match_id=%s | rollback completed", player_name, epoch_count, match_id)
 
         try:
-            con.commit()
-            logging.info(
-                "%s | epoch=%s committed | inserted=%s | ghost=%s | skipped=%s",
-                player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
-            )
+            if is_dry_run:
+                logging.info(
+                    "%s | dry run | epoch=%s would commit | inserted=%s | ghost=%s | skipped=%s",
+                    player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
+                )
+            else:
+                con.commit()
+                logging.info(
+                    "%s | epoch=%s committed | inserted=%s | ghost=%s | skipped=%s",
+                    player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
+                )
         except Exception:
             logging.exception("%s | epoch=%s | commit failed", player_name, epoch_count)
-            con.rollback()
-            existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
-            logging.warning("%s | epoch=%s | rollback completed", player_name, epoch_count)
+            if not is_dry_run:
+                con.rollback()
+                existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
+                logging.warning("%s | epoch=%s | rollback completed", player_name, epoch_count)
 
     if matches_found:
         logging.info("Some duplicate matches for %s were skipped.", player_name)
