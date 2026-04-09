@@ -21,6 +21,12 @@ function updatePaginationUi() {
     dom.pageNumberInput.value = String(state.currentPage);
     dom.pageNumberInput.min = "1";
     dom.pageNumberInput.max = String(Math.max(state.totalPages, 1));
+
+    const min = Number(dom.pageNumberInput.min) || 1;
+    const max = Number(dom.pageNumberInput.max) || 1;
+    const current = Number(dom.pageNumberInput.value) || min;
+
+    dom.pageNumberInput.value = String(Math.min(Math.max(current, min), max));
     dom.pageNumberInput.disabled = state.totalPages <= 1;
   }
 
@@ -290,14 +296,24 @@ function afterInit() {
     if (!input) return;
 
     const step = Number(input.step) || 1;
-    const current = Number(input.value) || 0;
+    const min = input.min !== "" ? Number(input.min) : null;
+    const max = input.max !== "" ? Number(input.max) : null;
+    const current = input.value === "" ? (min ?? 0) : Number(input.value);
 
-    if (btn.classList.contains("plus")) {
-      input.value = current + step;
-    } else {
-      input.value = current - step;
+    let nextValue = btn.classList.contains("plus")
+      ? current + step
+      : current - step;
+
+    if (min !== null) {
+      nextValue = Math.max(min, nextValue);
     }
 
+    if (max !== null) {
+      nextValue = Math.min(max, nextValue);
+    }
+
+    input.value = String(nextValue);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
 }

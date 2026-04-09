@@ -61,6 +61,8 @@ function buildValueControlHtml(column, inputValue = "") {
         <input
           class="filter-input"
           type="number"
+          min="0"
+          step="1"
           placeholder="value"
           value="${escapeHtml(inputValue)}"
         />
@@ -100,6 +102,37 @@ function createFilterRow(column, filtersWrap, checkbox, columnFilterMode, operat
     ${buildValueControlHtml(column, inputValue)}
     <button type="button" class="remove-filter-btn">x</button>
   `;
+
+  row.querySelectorAll(".number-btn").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+
+      const wrapper = btn.closest(".number-input");
+      const input = wrapper?.querySelector("input[type='number']");
+      if (!input) return;
+
+      const step = Number(input.step) || 1;
+      const min = input.min !== "" ? Number(input.min) : null;
+      const max = input.max !== "" ? Number(input.max) : null;
+      const current = input.value === "" ? 0 : Number(input.value);
+
+      let nextValue = btn.classList.contains("plus")
+        ? current + step
+        : current - step;
+
+      if (min !== null) {
+        nextValue = Math.max(min, nextValue);
+      }
+
+      if (max !== null) {
+        nextValue = Math.min(max, nextValue);
+      }
+
+      input.value = String(nextValue);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
 
   row.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -197,6 +230,10 @@ export function renderColumnControls() {
       </div>
 
       ${supportsColumnFilters ? `
+        <div class="filters-wrap"></div>
+
+        <button type="button" class="add-filter-btn">+ Add filter</button>
+
         <div class="column-filter-mode">
           <label class="logic-option">
             <input type="radio" name="columnMode-${column.key}" value="all" checked />
@@ -207,10 +244,6 @@ export function renderColumnControls() {
             <span>OR</span>
           </label>
         </div>
-
-        <div class="filters-wrap"></div>
-
-        <button type="button" class="add-filter-btn">+ Add filter</button>
       ` : ""}
     `;
 
