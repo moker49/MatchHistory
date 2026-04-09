@@ -41,6 +41,30 @@ function animateCardHeight(card, mutate, duration = 180) {
   );
 }
 
+function animateElementReflow(element, mutate, duration = 180) {
+  const first = element.getBoundingClientRect();
+
+  mutate();
+
+  const last = element.getBoundingClientRect();
+  const deltaY = first.top - last.top;
+
+  if (Math.abs(deltaY) < 1) {
+    return;
+  }
+
+  element.animate(
+    [
+      { transform: `translateY(${deltaY}px)` },
+      { transform: "translateY(0)" }
+    ],
+    {
+      duration,
+      easing: "cubic-bezier(0.22, 1, 0.36, 1)"
+    }
+  );
+}
+
 function updateColumnFilterModeVisibility({ checkbox, filtersWrap, columnFilterMode, supportsColumnFilters }) {
   if (!supportsColumnFilters || !columnFilterMode || !filtersWrap) {
     return;
@@ -346,7 +370,7 @@ export function renderColumnControls() {
       addFilterBtn.addEventListener("click", (event) => {
         event.stopPropagation();
 
-        animateCardHeight(card, () => {
+        animateElementReflow(addFilterBtn, () => {
           if (!checkbox.checked) {
             setEnabled(true);
           }

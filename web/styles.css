@@ -45,9 +45,9 @@
   --radius: 18px;
 
   /* motion */
-  --motion-fast: 300ms;
-  --motion-med: 600ms;
-  --motion-slow: 900ms;
+  --motion-fast: 140ms;
+  --motion-med: 180ms;
+  --motion-slow: 240ms;
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
