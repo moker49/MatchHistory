@@ -16,6 +16,8 @@
   /* borders */
   --border: #2a3953;
   --border-hover: #3a536f;
+  --border-danger: hsl(0, 50%, 30%);
+  --border-danger-hover: hsl(0, 75%, 37%);
 
   /* text */
   --text: #e8eefc;
@@ -29,7 +31,6 @@
 
   /* status */
   --danger: #f87171;
-  --danger2: #cc5050;
   --success: #86efac;
   --warning: #fbbf24;
 
@@ -172,7 +173,7 @@ p {
   border-radius: 10px 0 0 10px;
   border-right: 0;
   cursor: pointer;
-  transition: 0.14s ease;
+  transition: 0.12s ease;
 }
 
 .panel-collapse-btn:hover {
@@ -208,7 +209,6 @@ p {
 
 .results-header {
   display: flex;
-  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
 }
@@ -249,6 +249,35 @@ p {
 
 .pagination-go-btn {
   padding: 10px 16px;
+  min-width: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* hide text when loading */
+.pagination-go-btn.loading {
+  color: transparent;
+  position: relative;
+}
+
+/* spinner */
+.pagination-go-btn.loading::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--muted);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  position: absolute;
+}
+
+/* animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .settings-grid {
@@ -277,7 +306,20 @@ p {
   font: inherit;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.14s ease, opacity 0.14s ease, background 0.14s ease, border-color 0.14s ease;
+  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.primary-btn:disabled,
+.secondary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.secondary-btn:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-3);
 }
 
 .primary-btn {
@@ -285,6 +327,10 @@ p {
   color: var(--text-inverse);
   border: none;
   flex: 3;
+}
+
+.primary-btn:hover {
+  filter: brightness(0.95);
 }
 
 .secondary-btn {
@@ -305,7 +351,7 @@ p {
   border: 1px solid var(--border);
   border-radius: 16px;
   cursor: pointer;
-  transition: 0.16s ease;
+  transition: 0.12s ease;
 }
 
 .column-card:hover {
@@ -388,7 +434,7 @@ p {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.16s ease;
+  transition: 0.12s ease;
 }
 
 .add-filter-btn {
@@ -396,19 +442,21 @@ p {
   margin-top: 12px;
 }
 
-.add-filter-btn:hover,
-.remove-filter-btn:hover {
-  background: var(--surface-3);
-}
-
 .add-filter-btn:hover {
   border-color: var(--border-hover);
+  background: var(--surface-3);
 }
 
 .remove-filter-btn {
   white-space: nowrap;
-  border-color: var(--danger2);
-  color: var(--danger2);
+  border-color: var(--border-danger);
+  color: var(--border-danger);
+}
+
+.remove-filter-btn:hover {
+  border-color: var(--border-danger-hover);
+  color: var(--border-danger);
+  background: var(--surface-3);
 }
 
 .column-card:not(.enabled) .filters-wrap,
@@ -418,6 +466,7 @@ p {
 
 .player-options {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 8px;
 }
 
@@ -432,7 +481,7 @@ p {
   border: 1px solid var(--border);
   border-radius: 14px;
   cursor: pointer;
-  transition: 0.16s ease;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
 .player-option:hover {
@@ -443,6 +492,10 @@ p {
 .player-option.selected {
   background: var(--accent-soft);
   border-color: var(--accent);
+}
+
+.player-option.selected:hover {
+  filter: brightness(0.88);
 }
 
 .player-option-name {

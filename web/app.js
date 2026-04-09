@@ -64,7 +64,7 @@ async function applyFilters(page = 1) {
 
     if (dom.pageGoBtn) {
       dom.pageGoBtn.disabled = true;
-      dom.pageGoBtn.textContent = "Loading...";
+      dom.pageGoBtn.classList.add("loading");
     }
 
     const searchRequest = buildSearchRequest({
@@ -111,7 +111,7 @@ async function applyFilters(page = 1) {
 
     if (dom.pageGoBtn) {
       dom.pageGoBtn.disabled = state.totalPages <= 1;
-      dom.pageGoBtn.textContent = "Go";
+      dom.pageGoBtn.classList.remove("loading");
     }
   }
 }
