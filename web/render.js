@@ -65,15 +65,78 @@ function animateElementReflow(element, mutate, duration = 180) {
   );
 }
 
-function updateColumnFilterModeVisibility({ checkbox, filtersWrap, columnFilterMode, supportsColumnFilters }) {
+function updateColumnFilterModeVisibility({
+  checkbox,
+  filtersWrap,
+  columnFilterMode,
+  supportsColumnFilters
+}) {
   if (!supportsColumnFilters || !columnFilterMode || !filtersWrap) {
     return;
   }
 
   const filterCount = filtersWrap.querySelectorAll(".filter-row").length;
   const isEnabled = checkbox.checked;
+  const shouldBeVisible = isEnabled && filterCount >= 2;
+  const isVisible = columnFilterMode.classList.contains("visible");
 
-  columnFilterMode.classList.toggle("visible", isEnabled && filterCount >= 2);
+  if (shouldBeVisible === isVisible) {
+    return;
+  }
+
+  if (shouldBeVisible) {
+    columnFilterMode.classList.add("visible");
+    columnFilterMode.style.display = "grid";
+    columnFilterMode.style.overflow = "hidden";
+    columnFilterMode.style.height = "0px";
+    columnFilterMode.style.marginTop = "0px";
+    columnFilterMode.style.opacity = "0";
+
+    const targetHeight = columnFilterMode.scrollHeight;
+
+    requestAnimationFrame(() => {
+      columnFilterMode.style.transition =
+        "height 180ms cubic-bezier(0.22, 1, 0.36, 1), " +
+        "margin-top 180ms cubic-bezier(0.22, 1, 0.36, 1), " +
+        "opacity 140ms ease 70ms";
+      columnFilterMode.style.height = `${targetHeight}px`;
+      columnFilterMode.style.marginTop = "12px";
+      columnFilterMode.style.opacity = "1";
+    });
+
+    window.setTimeout(() => {
+      columnFilterMode.style.height = "auto";
+      columnFilterMode.style.overflow = "visible";
+    }, 180);
+
+    return;
+  }
+
+  const startHeight = columnFilterMode.getBoundingClientRect().height;
+  columnFilterMode.style.overflow = "hidden";
+  columnFilterMode.style.height = `${startHeight}px`;
+  columnFilterMode.style.marginTop = "12px";
+  columnFilterMode.style.opacity = "1";
+
+  requestAnimationFrame(() => {
+    columnFilterMode.style.transition =
+      "height 180ms cubic-bezier(0.22, 1, 0.36, 1), " +
+      "margin-top 180ms cubic-bezier(0.22, 1, 0.36, 1), " +
+      "opacity 100ms ease";
+    columnFilterMode.style.height = "0px";
+    columnFilterMode.style.marginTop = "0px";
+    columnFilterMode.style.opacity = "0";
+  });
+
+  window.setTimeout(() => {
+    columnFilterMode.classList.remove("visible");
+    columnFilterMode.style.display = "";
+    columnFilterMode.style.height = "";
+    columnFilterMode.style.marginTop = "";
+    columnFilterMode.style.opacity = "";
+    columnFilterMode.style.overflow = "";
+    columnFilterMode.style.transition = "";
+  }, 180);
 }
 
 function buildValueControlHtml(column, inputValue = "") {

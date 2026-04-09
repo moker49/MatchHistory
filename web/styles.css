@@ -221,7 +221,7 @@ p {
   border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.12s ease;
+  transition: var(--motion-fast) ease,
 }
 
 .logic-option span:hover {
@@ -448,35 +448,15 @@ p {
 }
 
 .column-filter-mode {
-  display: grid;
+  display: none;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-
-  opacity: 0;
-  max-height: 0;
   margin-top: 0;
-  overflow: hidden;
-  transform: translateY(-4px);
-  pointer-events: none;
-
-  transition:
-    opacity var(--motion-fast) ease,
-    max-height var(--motion-med) var(--ease-soft),
-    transform var(--motion-fast) ease,
-    margin-top var(--motion-med) var(--ease-soft);
-
-  transition-delay: 0ms;
+  opacity: 0;
 }
 
 .column-filter-mode.visible {
-  opacity: 1;
-  max-height: 80px;
-  margin-top: 12px;
-  transform: translateY(0);
-  pointer-events: auto;
-
-  /* delayed start for this specific animation */
-  transition-delay: 90ms;
+  display: grid;
 }
 
 .filters-wrap {
