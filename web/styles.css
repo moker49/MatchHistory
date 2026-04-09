@@ -43,6 +43,12 @@
   /* misc */
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
   --radius: 18px;
+
+  /* motion */
+  --motion-fast: 300ms;
+  --motion-med: 600ms;
+  --motion-slow: 900ms;
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -442,14 +448,35 @@ p {
 }
 
 .column-filter-mode {
-  display: none;
+  display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 12px;
+
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  transform: translateY(-4px);
+  pointer-events: none;
+
+  transition:
+    opacity var(--motion-fast) ease,
+    max-height var(--motion-med) var(--ease-soft),
+    transform var(--motion-fast) ease,
+    margin-top var(--motion-med) var(--ease-soft);
+
+  transition-delay: 0ms;
 }
 
 .column-filter-mode.visible {
-  display: grid;
+  opacity: 1;
+  max-height: 80px;
+  margin-top: 12px;
+  transform: translateY(0);
+  pointer-events: auto;
+
+  /* delayed start for this specific animation */
+  transition-delay: 90ms;
 }
 
 .filters-wrap {
@@ -462,6 +489,13 @@ p {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr) auto;
   gap: 8px;
+  transform-origin: top;
+  animation: filter-row-in var(--motion-med) var(--ease-soft);
+  transition:
+    height var(--motion-med) var(--ease-soft),
+    padding var(--motion-med) var(--ease-soft),
+    margin var(--motion-med) var(--ease-soft),
+    opacity var(--motion-fast) ease;
 }
 
 .filter-input,
@@ -763,4 +797,94 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
+}
+
+/* smoother card size changes */
+.column-card {
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+  overflow: clip;
+}
+
+/* rows entering */
+.filter-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  gap: 8px;
+  transform-origin: top;
+  animation: filter-row-in var(--motion-med) var(--ease-soft);
+}
+
+/* rows exiting */
+.filter-row.is-removing {
+  pointer-events: none;
+}
+
+
+
+/* small motion for add button too */
+.add-filter-btn {
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease,
+    transform var(--motion-fast) ease,
+    opacity var(--motion-fast) ease;
+}
+
+.column-card:not(.enabled) .add-filter-btn {
+  display: none;
+}
+
+.column-card.enabled .add-filter-btn {
+  animation: filter-ui-in var(--motion-fast) ease;
+}
+
+@keyframes filter-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scaleY(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes filter-row-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.96);
+  }
+}
+
+@keyframes filter-ui-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .column-card,
+  .column-filter-mode,
+  .add-filter-btn {
+    transition: none;
+  }
+
+  .filter-row,
+  .filter-row.is-removing,
+  .column-card.enabled .add-filter-btn {
+    animation: none;
+  }
 }

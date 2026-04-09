@@ -19,6 +19,28 @@ function supportsFilters(column) {
   return column.key !== "PLAYER";
 }
 
+function animateCardHeight(card, mutate, duration = 180) {
+  const startHeight = card.getBoundingClientRect().height;
+
+  mutate();
+
+  const endHeight = card.getBoundingClientRect().height;
+  if (Math.abs(endHeight - startHeight) < 1) {
+    return;
+  }
+
+  card.animate(
+    [
+      { height: `${startHeight}px` },
+      { height: `${endHeight}px` }
+    ],
+    {
+      duration,
+      easing: "cubic-bezier(0.22, 1, 0.36, 1)"
+    }
+  );
+}
+
 function updateColumnFilterModeVisibility({ checkbox, filtersWrap, columnFilterMode, supportsColumnFilters }) {
   if (!supportsColumnFilters || !columnFilterMode || !filtersWrap) {
     return;
@@ -140,13 +162,37 @@ function createFilterRow(column, filtersWrap, checkbox, columnFilterMode, operat
 
   row.querySelector(".remove-filter-btn").addEventListener("click", (event) => {
     event.stopPropagation();
-    row.remove();
-    updateColumnFilterModeVisibility({
-      checkbox,
-      filtersWrap,
-      columnFilterMode,
-      supportsColumnFilters: true
+
+    const card = filtersWrap.closest(".column-card");
+    if (!card) {
+      row.remove();
+      return;
+    }
+
+    const rowHeight = row.getBoundingClientRect().height;
+
+    row.classList.add("is-removing");
+    row.style.height = `${rowHeight}px`;
+    row.style.overflow = "hidden";
+
+    animateCardHeight(card, () => {
+      row.style.height = "0px";
+      row.style.marginTop = "0px";
+      row.style.marginBottom = "0px";
+      row.style.paddingTop = "0px";
+      row.style.paddingBottom = "0px";
+      row.style.opacity = "0";
     });
+
+    window.setTimeout(() => {
+      row.remove();
+      updateColumnFilterModeVisibility({
+        checkbox,
+        filtersWrap,
+        columnFilterMode,
+        supportsColumnFilters: true
+      });
+    }, 180);
   });
 
   filtersWrap.appendChild(row);
@@ -300,11 +346,13 @@ export function renderColumnControls() {
       addFilterBtn.addEventListener("click", (event) => {
         event.stopPropagation();
 
-        if (!checkbox.checked) {
-          setEnabled(true);
-        }
+        animateCardHeight(card, () => {
+          if (!checkbox.checked) {
+            setEnabled(true);
+          }
 
-        createFilterRow(column, filtersWrap, checkbox, columnFilterMode);
+          createFilterRow(column, filtersWrap, checkbox, columnFilterMode);
+        });
       });
 
       columnFilterMode.addEventListener("click", (event) => {
