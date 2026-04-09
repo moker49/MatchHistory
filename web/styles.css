@@ -16,8 +16,8 @@
   /* borders */
   --border: #2a3953;
   --border-hover: #3a536f;
-  --border-danger: hsl(0, 50%, 30%);
-  --border-danger-hover: hsl(0, 75%, 37%);
+  --border-danger: hsl(0, 55%, 35%);
+  --border-danger-hover: hsl(0, 80%, 40%);
 
   /* text */
   --text: #e8eefc;
@@ -174,7 +174,7 @@ p {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 10px 0 0 10px;
+  border-radius: 14px 0 0 14px;
   border-right: 0;
   cursor: pointer;
   transition: 0.12s ease;
@@ -193,6 +193,35 @@ p {
   font-size: 1.3rem;
   line-height: 1;
   color: var(--accent);
+}
+
+.logic-option {
+  position: relative;
+}
+
+.logic-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.logic-option span {
+  display: block;
+  padding: 12px 14px;
+  text-align: center;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.12s ease;
+}
+
+.logic-option input:checked + span {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 /* backdrop */
@@ -221,7 +250,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
   margin-left: auto;
 }
 
@@ -243,7 +272,7 @@ p {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   font: inherit;
   text-align: right;
 }
@@ -371,13 +400,13 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -400,7 +429,7 @@ p {
 .column-filter-mode {
   display: none;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
   margin-top: 12px;
 }
 
@@ -410,14 +439,14 @@ p {
 
 .filters-wrap {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   margin-top: 12px;
 }
 
 .filter-row {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
 }
 
 .filter-input,
@@ -427,7 +456,7 @@ p {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   font: inherit;
 }
 
@@ -438,7 +467,7 @@ p {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   font: inherit;
   font-weight: 700;
   cursor: pointer;

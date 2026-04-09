@@ -185,11 +185,11 @@ export function renderColumnControls() {
 
       ${supportsColumnFilters ? `
         <div class="column-filter-mode">
-          <label class="segment small-segment">
+          <label class="logic-option">
             <input type="radio" name="columnMode-${column.key}" value="all" checked />
             <span>AND</span>
           </label>
-          <label class="segment small-segment">
+          <label class="logic-option">
             <input type="radio" name="columnMode-${column.key}" value="any" />
             <span>OR</span>
           </label>
@@ -407,8 +407,8 @@ function toggleSort(column) {
   }
 
   renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []);
-  
-  if (sortChangedHandler) { 
+
+  if (sortChangedHandler) {
     sortChangedHandler({
       key: state.sort.key,
       direction: state.sort.direction
@@ -427,15 +427,15 @@ export function renderTable(rows, visibleColumnKeys) {
   dom.resultsHead.innerHTML = `
     <tr>
       ${visibleColumns.map((col) => {
-        const sortable = isSortableColumn(col);
-        const isActiveSort = state.sort.key === col.key;
-        const indicator = getSortIndicator(col);
+    const sortable = isSortableColumn(col);
+    const isActiveSort = state.sort.key === col.key;
+    const indicator = getSortIndicator(col);
 
-        if (!sortable) {
-          return `<th>${escapeHtml(col.label)}</th>`;
-        }
+    if (!sortable) {
+      return `<th>${escapeHtml(col.label)}</th>`;
+    }
 
-        return `
+    return `
           <th>
             <button
               type="button"
@@ -448,7 +448,7 @@ export function renderTable(rows, visibleColumnKeys) {
             </button>
           </th>
         `;
-      }).join("")}
+  }).join("")}
     </tr>
   `;
 
