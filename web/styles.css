@@ -111,6 +111,10 @@ h1 {
   gap: 12px;
 }
 
+.controls-header > * {
+  min-height: 48px;
+}
+
 /* floating left filter drawer */
 .controls-panel {
   position: fixed;
@@ -166,7 +170,7 @@ p {
 .panel-collapse-btn {
   display: flex;
   align-items: center;
-  padding: 12px;
+  padding: 0 12px;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
@@ -221,6 +225,10 @@ p {
   margin-left: auto;
 }
 
+.pagination-nav > * {
+  padding: 10px 0;
+}
+
 .pagination-label,
 .pagination-total {
   color: var(--muted);
@@ -230,7 +238,8 @@ p {
 
 .pagination-input {
   width: 84px;
-  padding: 10px 12px;
+  padding-left: 12px;
+  padding-right: 12px;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
@@ -248,8 +257,6 @@ p {
 }
 
 .pagination-go-btn {
-  padding: 10px 16px;
-  min-width: 72px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -301,7 +308,8 @@ p {
 .primary-btn,
 .secondary-btn {
   appearance: none;
-  padding: 14px 18px;
+  padding-left: 18px;
+  padding-right: 18px;
   border-radius: 14px;
   font: inherit;
   font-weight: 800;
