@@ -260,8 +260,9 @@ p {
   margin-left: auto;
 }
 
-.pagination-nav > * {
-  padding: 10px 0;
+.pagination-nav > *:not(.number-input) {
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .pagination-label,
@@ -272,9 +273,8 @@ p {
 }
 
 .pagination-input {
-  width: 84px;
-  padding-left: 12px;
-  padding-right: 12px;
+  width: 110px;
+  padding: 10px 12px;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
@@ -285,14 +285,16 @@ p {
 
 .pagination-input:hover,
 .filter-input:hover,
-.filter-select:hover {
+.filter-select:hover,
+.number-input:hover input {
   border-color: var(--border-hover);
   background: var(--surface-3);
 }
 
 .pagination-input:focus,
 .filter-input:focus,
-.filter-select:focus {
+.filter-select:focus,
+.number-input:focus-within input {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.12);
@@ -703,6 +705,50 @@ tbody tr:hover {
 .badge-unknown {
   background: var(--badge-unknown-bg);
   color: var(--muted);
+}
+
+/* wrapper */
+.number-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* input spacing so text doesn't overlap buttons */
+.number-input input {
+  padding-left: 36px;
+  padding-right: 36px;
+}
+
+/* custom number input */
+.number-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+
+  background: transparent;
+  color: var(--muted);
+  border: none;
+
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.12s ease;
+}
+
+.number-btn:hover {
+  color: var(--text);
+}
+
+.number-btn.minus {
+  left: 6px;
+}
+
+.number-btn.plus {
+  right: 6px;
 }
 
 /* Chrome, Safari, Edge */

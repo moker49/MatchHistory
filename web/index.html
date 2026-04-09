@@ -55,8 +55,12 @@
 
           <form id="paginationForm" class="pagination-nav" autocomplete="off">
             <label class="pagination-label" for="pageNumberInput">Page</label>
-            <input id="pageNumberInput" class="pagination-input" type="number" min="1" step="1" value="1"
-              inputmode="numeric" />
+            <div class="number-input">
+              <button type="button" class="number-btn minus">−</button>
+              <input id="pageNumberInput" class="pagination-input" type="number" min="1" step="1" value="1"
+                inputmode="numeric" />
+              <button type="button" class="number-btn plus">+</button>
+            </div>
             <span id="paginationTotal" class="pagination-total">of 1</span>
             <button id="pageGoBtn" class="secondary-btn pagination-go-btn" type="submit">Go</button>
           </form>

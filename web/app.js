@@ -269,15 +269,37 @@ function updateScrollbarWidth() {
   );
 }
 
-// run once after initial render
-updateScrollbarWidth();
+function afterInit() {
+  // update on resize
+  window.addEventListener("resize", updateScrollbarWidth);
 
-// update on resize
-window.addEventListener("resize", updateScrollbarWidth);
+  // update when filters panel content changes
+  const observer = new ResizeObserver(updateScrollbarWidth);
+  const settingsContent = document.querySelector(".controls-panel .settings-content");
+  if (settingsContent) {
+    observer.observe(settingsContent);
+  }
 
-// update when filters panel content changes
-const observer = new ResizeObserver(updateScrollbarWidth);
-const settingsContent = document.querySelector(".controls-panel .settings-content");
-if (settingsContent) {
-  observer.observe(settingsContent);
+  // Enable custom number input buttons
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".number-btn");
+    if (!btn) return;
+
+    const wrapper = btn.closest(".number-input");
+    const input = wrapper?.querySelector("input[type='number']");
+    if (!input) return;
+
+    const step = Number(input.step) || 1;
+    const current = Number(input.value) || 0;
+
+    if (btn.classList.contains("plus")) {
+      input.value = current + step;
+    } else {
+      input.value = current - step;
+    }
+
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 }
+
+afterInit();

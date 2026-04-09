@@ -54,10 +54,23 @@ function buildValueControlHtml(column, inputValue = "") {
     `;
   }
 
+  if (column.type === "number") {
+    return `
+      <div class="number-input">
+        <button type="button" class="number-btn minus">−</button>
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="value"
+          value="${escapeHtml(inputValue)}"
+        />
+        <button type="button" class="number-btn plus">+</button>
+      </div>
+    `;
+  }
+
   const inputType =
-    column.type === "number" ? "number" :
-      column.type === "date" ? "date" :
-        "text";
+    column.type === "date" ? "date" : "text";
 
   return `
     <input
