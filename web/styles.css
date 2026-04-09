@@ -218,10 +218,16 @@ p {
   transition: 0.12s ease;
 }
 
+.logic-option span:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-3);
+}
+
 .logic-option input:checked + span {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--text);
+  cursor: default;
 }
 
 /* backdrop */
@@ -275,6 +281,13 @@ p {
   border-radius: 14px;
   font: inherit;
   text-align: right;
+}
+
+.pagination-input:hover,
+.filter-input:hover,
+.filter-select:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-3);
 }
 
 .pagination-input:focus,
@@ -349,7 +362,7 @@ p {
 .primary-btn:disabled,
 .secondary-btn:disabled {
   opacity: 0.55;
-  cursor: not-allowed;
+  cursor: wait;
   transform: none;
   box-shadow: none;
 }
@@ -690,4 +703,17 @@ tbody tr:hover {
 .badge-unknown {
   background: var(--badge-unknown-bg);
   color: var(--muted);
+}
+
+/* Chrome, Safari, Edge */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
