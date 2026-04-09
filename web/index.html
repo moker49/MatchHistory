@@ -22,47 +22,28 @@
     </header>
 
     <main class="layout">
-		<button id="panelBackdrop" class="panel-backdrop" type="button" aria-label="Close filters"></button>
-		<section class="panel controls-panel" id="controlsPanel">
-		<div class="controls-header">
-			<h3>Filters</h3>
-			<button id="settingsToggle" class="panel-collapse-btn" type="button"
-			  aria-expanded="true" aria-controls="settingsContent">
-			  <span id="settingsToggleIcon" class="material-symbols-rounded">left_panel_close</span>
-			</button>
-		</div>
+      <button id="panelBackdrop" class="panel-backdrop" type="button" aria-label="Close filters"></button>
+      <section class="panel controls-panel" id="controlsPanel">
+        <div class="controls-header">
+          <div class="actions">
+            <button id="applyBtn" class="primary-btn">Apply</button>
+            <button id="resetBtn" class="secondary-btn">Reset</button>
+          </div>
+          <button id="settingsToggle" class="panel-collapse-btn" type="button" aria-expanded="true"
+            aria-controls="settingsContent">
+            <span id="settingsToggleIcon" class="material-symbols-rounded">left_panel_close</span>
+          </button>
+        </div>
 
         <div id="settingsContent" class="settings-content">
 
           <div class="settings-grid">
-            <div>
-              <div class="section-header">
-                <!--<h3>Actions</h3>-->
-              </div>
-              <div class="setting-card action-card">
-                <div class="actions">
-                  <button id="applyBtn" class="primary-btn">Refresh Table</button>
-                  <button id="resetBtn" class="secondary-btn" type="button">Reset</button>
-                </div>
-              </div>
+            <div class="setting-card">
+              <div id="playerOptions" class="player-options"></div>
             </div>
-
             <div>
-              <div class="section-header">
-                <!--<h3>Players</h3>-->
-              </div>
-              <div class="setting-card">
-                <div id="playerOptions" class="player-options"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="section-header">
-                <!--<h3>Columns & Filters</h3>-->
-              </div>
-
-              <div class="setting-card logic-card">
-                <label class="label">Filter Logic</label>
+              <!-- <div class="setting-card logic-card">
+                <label class="label">Which Filters </label>
                 <div class="segmented">
                   <label class="segment">
                     <input type="radio" name="filterMode" value="all" checked />
@@ -73,25 +54,25 @@
                     <span>Any (OR)</span>
                   </label>
                 </div>
-              </div>
-
+              </div> -->
               <div id="columnsContainer" class="columns-grid"></div>
             </div>
-
           </div>
+
         </div>
       </section>
 
       <section class="panel table-panel">
         <div class="panel-header results-header">
           <div>
-            <h2></h2>
             <p id="resultsSummary">Showing mock data</p>
+            <p>Unavailable: Brawl, Mahem</p>
           </div>
 
           <form id="paginationForm" class="pagination-nav" autocomplete="off">
             <label class="pagination-label" for="pageNumberInput">Page</label>
-            <input id="pageNumberInput" class="pagination-input" type="number" min="1" step="1" value="1" inputmode="numeric" />
+            <input id="pageNumberInput" class="pagination-input" type="number" min="1" step="1" value="1"
+              inputmode="numeric" />
             <span id="paginationTotal" class="pagination-total">of 1</span>
             <button id="pageGoBtn" class="secondary-btn pagination-go-btn" type="submit">Go</button>
           </form>

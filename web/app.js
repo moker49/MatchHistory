@@ -87,7 +87,7 @@ async function applyFilters(page = 1) {
     const totalCount = result.total_count ?? 0;
     const formattedTotal = totalCount.toLocaleString();
     dom.resultsSummary.textContent = `${formattedTotal} records`;
-    
+
     updatePaginationUi();
   } catch (err) {
     if (requestId !== latestRequestId) {
@@ -107,7 +107,7 @@ async function applyFilters(page = 1) {
     }
 
     dom.applyBtn.disabled = false;
-    dom.applyBtn.textContent = "Refresh";
+    dom.applyBtn.textContent = "Apply";
 
     if (dom.pageGoBtn) {
       dom.pageGoBtn.disabled = state.totalPages <= 1;
@@ -128,10 +128,10 @@ function resetControls() {
 
   renderPlayerOptions();
 
-  const globalMode = document.querySelector('input[name="filterMode"][value="all"]');
-  if (globalMode) {
-    globalMode.checked = true;
-  }
+  // const globalMode = document.querySelector('input[name="filterMode"][value="all"]');
+  // if (globalMode) {
+  //   globalMode.checked = true;
+  // }
 
   document.querySelectorAll(".column-card").forEach((card) => {
     const key = card.dataset.key;
@@ -171,7 +171,7 @@ function initCollapsibleSettings() {
   function setPanelOpen(isOpen) {
     dom.controlsPanel.classList.toggle("collapsed", !isOpen);
     dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
-    dom.settingsToggleIcon.textContent = isOpen ? "left_panel_close" : "left_panel_open";
+    dom.settingsToggleIcon.textContent = isOpen ? "left_panel_close" : "filter_list";
 
     if (dom.panelBackdrop) {
       dom.panelBackdrop.classList.toggle("visible", isOpen);

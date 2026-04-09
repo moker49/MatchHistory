@@ -61,7 +61,7 @@ body {
 }
 
 .app-shell {
-  width: min(1600px, calc(100% - 32px));
+  width: min(1500px, calc(80%));
   margin: 24px auto 40px;
 }
 
@@ -109,8 +109,8 @@ h1 {
 .controls-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  gap: 12px;
 }
 
 .controls-header h3 {
@@ -145,6 +145,7 @@ h1 {
 
 .settings-content {
   display: block;
+  margin-bottom: 20px;
 }
 
 .settings-content > * {
@@ -152,7 +153,7 @@ h1 {
 }
 
 .controls-panel.collapsed {
-  transform: translateX(calc(-100% + 72px));
+  transform: translateX(calc(-100% + 60px));
 }
 
 .controls-panel.collapsed .settings-content {
@@ -160,12 +161,9 @@ h1 {
 }
 
 .panel-collapse-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  padding: 12px;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
@@ -204,30 +202,6 @@ h1 {
 .panel-backdrop.visible {
   opacity: 1;
   pointer-events: auto;
-}
-
-/* desktop: no dimming, drawer just floats */
-@media (min-width: 1101px) {
-  .panel-backdrop.visible {
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-
-/* mobile/tablet: full slide-out */
-@media (max-width: 1100px) {
-  .controls-panel {
-    top: 16px;
-    right: 16px;
-    bottom: 16px;
-    left: 16px;
-    width: auto;
-    max-width: none;
-  }
-
-  .controls-panel.collapsed {
-    transform: translateX(calc(-100% - 16px));
-  }
 }
 
 .panel-header h2,
@@ -289,7 +263,7 @@ h1 {
 
 .settings-grid {
   display: grid;
-  gap: 16px;
+  gap: 24px;
 }
 
 .setting-card {
@@ -354,9 +328,9 @@ h1 {
 }
 
 .actions {
-  display: grid;
-  grid-template-columns: 1fr 120px;
+  display: flex;
   gap: 12px;
+  flex: 1;
 }
 
 .primary-btn,
@@ -374,12 +348,14 @@ h1 {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: var(--text-inverse);
   border: none;
+  flex: 3;
 }
 
 .secondary-btn {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
+  flex: 1;
 }
 
 .columns-grid {

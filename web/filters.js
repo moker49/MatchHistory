@@ -29,8 +29,9 @@ export function getSelectedPlayers() {
 }
 
 export function getGlobalFilterMode() {
-    const checked = document.querySelector('input[name="filterMode"]:checked');
-    return checked ? checked.value : "all";
+    // const checked = document.querySelector('input[name="filterMode"]:checked');
+    // return checked ? checked.value : "all";
+    return "all";
 }
 
 export function getEnabledColumns() {
