@@ -71,7 +71,7 @@ body {
 }
 
 .app-shell {
-  width: min(1500px, calc(80%));
+  width: min(1500px, 80%);
   margin: 24px auto 40px;
 }
 
@@ -92,6 +92,10 @@ h1 {
   margin: 0;
   font-size: clamp(2rem, 3vw, 3rem);
   line-height: 1.1;
+}
+
+p {
+  margin: 0;
 }
 
 .layout {
@@ -133,7 +137,9 @@ h1 {
   width: min(480px, calc(100vw - 32px));
   overflow: hidden;
   padding: 20px 0 0 20px;
-  transition: transform 0.25s ease, opacity 0.2s ease;
+  transition:
+    transform var(--motion-slow) ease,
+    opacity var(--motion-fast) ease;
   border-radius: 0;
   border: 0;
   border-right: 1px solid var(--border);
@@ -146,14 +152,6 @@ h1 {
   scrollbar-color: var(--border) var(--panel);
 }
 
-.settings-content {
-  margin-bottom: 20px;
-}
-
-.settings-content > * {
-  padding-right: calc(20px - var(--scrollbar-width, 0px));
-}
-
 .controls-panel.collapsed {
   transform: translateX(calc(-100% + 60px));
 }
@@ -162,15 +160,19 @@ h1 {
   display: none;
 }
 
+.settings-content {
+  margin-bottom: 20px;
+}
+
+.settings-content > * {
+  padding-right: calc(20px - var(--scrollbar-width, 0px));
+}
+
 .table-description {
   display: flex;
   flex-direction: column;
   gap: 6px;
   color: var(--muted);
-}
-
-p {
-  margin: 0;
 }
 
 .panel-collapse-btn {
@@ -183,7 +185,10 @@ p {
   border-radius: 14px 0 0 14px;
   border-right: 0;
   cursor: pointer;
-  transition: 0.12s ease;
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
 }
 
 .panel-collapse-btn:hover {
@@ -201,41 +206,6 @@ p {
   color: var(--accent);
 }
 
-.logic-option {
-  position: relative;
-}
-
-.logic-option input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.logic-option span {
-  display: block;
-  padding: 12px 14px;
-  text-align: center;
-  background: var(--surface-2);
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: var(--motion-fast) ease,
-}
-
-.logic-option span:hover {
-  border-color: var(--border-hover);
-  background: var(--surface-3);
-}
-
-.logic-option input:checked + span {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--text);
-  cursor: default;
-}
-
 /* backdrop */
 .panel-backdrop {
   position: fixed;
@@ -244,7 +214,7 @@ p {
   background: rgba(3, 8, 18, 0.42);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--motion-fast) ease;
 }
 
 .panel-backdrop.visible {
@@ -312,25 +282,22 @@ p {
   justify-content: center;
 }
 
-/* hide text when loading */
 .pagination-go-btn.loading {
   color: transparent;
   position: relative;
 }
 
-/* spinner */
 .pagination-go-btn.loading::after {
   content: "";
+  position: absolute;
   width: 16px;
   height: 16px;
   border: 2px solid var(--muted);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
-  position: absolute;
 }
 
-/* animation */
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -364,7 +331,12 @@ p {
   font: inherit;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+  transition:
+    transform var(--motion-fast) ease,
+    opacity var(--motion-fast) ease,
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
 }
 
 .primary-btn:disabled,
@@ -373,11 +345,6 @@ p {
   cursor: wait;
   transform: none;
   box-shadow: none;
-}
-
-.secondary-btn:hover {
-  border-color: var(--border-hover);
-  background: var(--surface-3);
 }
 
 .primary-btn {
@@ -398,6 +365,11 @@ p {
   flex: 1;
 }
 
+.secondary-btn:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-3);
+}
+
 .columns-grid {
   display: grid;
   gap: 12px;
@@ -409,7 +381,11 @@ p {
   border: 1px solid var(--border);
   border-radius: 16px;
   cursor: pointer;
-  transition: 0.12s ease;
+  overflow: clip;
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
 }
 
 .column-card:hover {
@@ -459,6 +435,45 @@ p {
   display: grid;
 }
 
+.logic-option {
+  position: relative;
+}
+
+.logic-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.logic-option span {
+  display: block;
+  padding: 12px 14px;
+  text-align: center;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+
+.logic-option span:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-3);
+}
+
+.logic-option input:checked + span {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+  cursor: default;
+}
+
 .filters-wrap {
   display: grid;
   gap: 8px;
@@ -476,6 +491,10 @@ p {
     padding var(--motion-med) var(--ease-soft),
     margin var(--motion-med) var(--ease-soft),
     opacity var(--motion-fast) ease;
+}
+
+.filter-row.is-removing {
+  pointer-events: none;
 }
 
 .filter-input,
@@ -500,7 +519,12 @@ p {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.12s ease;
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease,
+    transform var(--motion-fast) ease,
+    opacity var(--motion-fast) ease;
 }
 
 .add-filter-btn {
@@ -547,7 +571,10 @@ p {
   border: 1px solid var(--border);
   border-radius: 14px;
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    filter var(--motion-fast) ease;
 }
 
 .player-option:hover {
@@ -722,20 +749,17 @@ tbody tr:hover {
   color: var(--muted);
 }
 
-/* wrapper */
 .number-input {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-/* input spacing so text doesn't overlap buttons */
 .number-input input {
   padding-left: 36px;
   padding-right: 36px;
 }
 
-/* custom number input */
 .number-btn {
   position: absolute;
   top: 50%;
@@ -744,14 +768,14 @@ tbody tr:hover {
   height: 28px;
   display: grid;
   place-items: center;
-
   background: transparent;
   color: var(--muted);
   border: none;
-
   font-weight: 900;
   cursor: pointer;
-  transition: 0.12s ease;
+  transition:
+    color var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
 }
 
 .number-btn:hover {
@@ -779,44 +803,6 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* smoother card size changes */
-.column-card {
-  transition:
-    background var(--motion-fast) ease,
-    border-color var(--motion-fast) ease,
-    box-shadow var(--motion-fast) ease;
-  overflow: clip;
-}
-
-/* rows entering */
-.filter-row {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr) auto;
-  gap: 8px;
-  transform-origin: top;
-  animation: filter-row-in var(--motion-med) var(--ease-soft);
-}
-
-/* rows exiting */
-.filter-row.is-removing {
-  pointer-events: none;
-}
-
-
-
-/* small motion for add button too */
-.add-filter-btn {
-  transition:
-    border-color 0.12s ease,
-    background 0.12s ease,
-    transform var(--motion-fast) ease,
-    opacity var(--motion-fast) ease;
-}
-
-.column-card:not(.enabled) .add-filter-btn {
-  display: none;
-}
-
 .column-card.enabled .add-filter-btn {
   animation: filter-ui-in var(--motion-fast) ease;
 }
@@ -832,17 +818,6 @@ input[type="number"] {
   }
 }
 
-@keyframes filter-row-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-4px) scaleY(0.96);
-  }
-}
-
 @keyframes filter-ui-in {
   from {
     opacity: 0;
@@ -854,16 +829,24 @@ input[type="number"] {
   }
 }
 
-/* accessibility */
 @media (prefers-reduced-motion: reduce) {
+  .controls-panel,
+  .panel-collapse-btn,
+  .panel-backdrop,
+  .primary-btn,
+  .secondary-btn,
   .column-card,
-  .column-filter-mode,
-  .add-filter-btn {
+  .logic-option span,
+  .filter-row,
+  .add-filter-btn,
+  .remove-filter-btn,
+  .player-option,
+  .number-btn {
     transition: none;
   }
 
+  .pagination-go-btn.loading::after,
   .filter-row,
-  .filter-row.is-removing,
   .column-card.enabled .add-filter-btn {
     animation: none;
   }
