@@ -13,7 +13,7 @@
     "procedure_select_players": "PLAYER_SALL_V1",
     "procedure_select_columns": "COLUMNS_S_V1",
     "procedure_list_options": "LIST_OPTIONS_V1",
-    "procedure_search_matches": "SEARCH_V2",
+    "procedure_search_matches": "SEARCH_V4",
     "dry_run": 0,
     "log_level": "info"
 }

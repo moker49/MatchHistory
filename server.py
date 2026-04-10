@@ -12,11 +12,34 @@ app = Flask(__name__)
 CORS(app)
 
 # =========================
-# LOGGING
+# CONFIG
 # =========================
 with open("config.json", "r", encoding="utf-8") as json_file:
     config = json.load(json_file)
+with open("keys.json") as json_file:
+    keys = json.load(json_file)
 
+players_proc = config["procedure_select_players"]
+columns_proc = config["procedure_select_columns"]
+options_proc = config["procedure_list_options"]
+search_matches_proc = config["procedure_search_matches"]
+
+conn_string = f"""
+    DRIVER={{{config['sql_driver']}}};
+    SERVER={config['sql_server']};
+    DATABASE={config['sql_db']};
+    UID={keys["db_user"]};
+    PWD={keys["db_password"]};
+"""
+
+api_host = config.get("api_host", "127.0.0.1")
+api_port = int(config.get("api_port", 5001))
+api_debug = bool(config.get("api_debug", False))
+
+
+# =========================
+# LOGGING
+# =========================
 log_formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
 
 root_logger = logging.getLogger()
@@ -35,26 +58,6 @@ file_handler = RotatingFileHandler(
 )
 file_handler.setFormatter(log_formatter)
 root_logger.addHandler(file_handler)
-
-
-# =========================
-# CONFIG
-# =========================
-players_proc = config["procedure_select_players"]
-columns_proc = config["procedure_select_columns"]
-options_proc = config["procedure_list_options"]
-search_matches_proc = config["procedure_search_matches"]
-
-conn_string = f"""
-    DRIVER={{{config['sql_driver']}}};
-    SERVER={config['sql_server']};
-    DATABASE={config['sql_db']};
-    Trust_Connection=yes;
-"""
-
-api_host = config.get("api_host", "127.0.0.1")
-api_port = int(config.get("api_port", 5001))
-api_debug = bool(config.get("api_debug", False))
 
 
 # =========================

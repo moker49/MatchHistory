@@ -35,7 +35,8 @@ conn_string = f"""
     DRIVER={{{config['sql_driver']}}};
     SERVER={config['sql_server']};
     DATABASE={config['sql_db']};
-    Trust_Connection=yes;
+    UID={keys["db_user"]};
+    PWD={keys["db_password"]};
 """
 
 # =========================
