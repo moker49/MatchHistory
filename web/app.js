@@ -193,7 +193,13 @@ function initCollapsibleSettings() {
     setPanelOpen(false);
   });
 
-  setPanelOpen(true);
+  const startsOpen = !dom.controlsPanel.classList.contains("collapsed");
+  dom.settingsToggle.setAttribute("aria-expanded", String(startsOpen));
+  dom.settingsToggleIcon.textContent = startsOpen ? "left_panel_close" : "filter_list";
+
+  if (dom.panelBackdrop) {
+    dom.panelBackdrop.classList.toggle("visible", startsOpen);
+  }
 }
 
 function initPagination() {
@@ -228,6 +234,11 @@ async function init() {
   });
   dom.resetBtn.addEventListener("click", resetControls);
 
+  const initialSearchPromise = searchMatches({
+    page: 1,
+    page_size: state.pageSize
+  });
+
   try {
     await loadPlayers();
   } catch (err) {
@@ -257,7 +268,24 @@ async function init() {
     scheduleSortRefresh();
   });
 
-  await applyFilters(1);
+  try {
+    const result = await initialSearchPromise;
+
+    state.currentPage = Math.max(1, Number(result.page) || 1);
+    state.totalPages = Math.max(1, Number(result.total_pages) || 1);
+    state.totalCount = Math.max(0, Number(result.total_count) || 0);
+
+    const enabledColumns = getEnabledColumns();
+    renderTable(result.rows || [], enabledColumns);
+
+    const totalCount = result.total_count ?? 0;
+    dom.resultsSummary.textContent = `${totalCount.toLocaleString()} records`;
+
+    updatePaginationUi();
+  } catch (err) {
+    console.error("Failed to load initial matches:", err);
+    await applyFilters(1);
+  }
 }
 
 init();

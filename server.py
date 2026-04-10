@@ -61,6 +61,21 @@ root_logger.addHandler(file_handler)
 
 
 # =========================
+# DEFAULTS
+# =========================
+DEFAULT_VISIBLE_COLUMNS = [
+    "PLAYER",
+    "GAME_MODE",
+    "CHAMPION",
+    "DATE",
+    "RESULT",
+    "KILLS",
+    "DEATHS",
+    "ASSISTS"
+]
+
+
+# =========================
 # HELPERS
 # =========================
 def get_connection():
@@ -147,6 +162,41 @@ def fetch_column_options():
 
         logging.info("Loaded options for %s list(s).", len(grouped_options))
         return grouped_options
+
+
+def apply_initial_search_defaults(search_request):
+    is_initial_search = (
+        not search_request["players"]
+        and not search_request["visible_columns"]
+        and not search_request["filters"]
+        and search_request["page"] == 1
+    )
+
+    if not is_initial_search:
+        return search_request
+
+    try:
+        players = fetch_players()
+        all_puuids = [
+            str(player.get("PUUID", "")).strip()
+            for player in players
+            if str(player.get("PUUID", "")).strip()
+        ]
+    except Exception:
+        logging.exception("Failed to load default players for initial search.")
+        all_puuids = []
+
+    if all_puuids:
+        search_request["players"] = all_puuids
+
+    if not search_request["visible_columns"]:
+        search_request["visible_columns"] = DEFAULT_VISIBLE_COLUMNS.copy()
+
+    if not search_request.get("sort_key"):
+        search_request["sort_key"] = "DATE"
+        search_request["sort_direction"] = "desc"
+
+    return search_request
 
 
 def parse_match_search_request(payload):
@@ -358,12 +408,13 @@ def api_column_options():
 def api_matches_search():
     client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
     rate_key = f"matches_search:{client_ip}"
-                
+
     wait_for_rate_limit(rate_key, window_seconds=2.0)
 
     try:
         payload = request.get_json(silent=True) or {}
         search_request = parse_match_search_request(payload)
+        search_request = apply_initial_search_defaults(search_request)
         result = search_matches(search_request)
 
         return jsonify({
