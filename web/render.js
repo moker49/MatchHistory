@@ -602,7 +602,7 @@ export function renderTable(rows, visibleColumnKeys) {
   state.lastVisibleColumnKeys = visibleColumnKeys;
 
   const visibleColumns = state.allColumns.filter((col) =>
-    visibleColumnKeys.includes(col.key)
+    visibleColumnKeys.includes(col.key) && col.key !== "MATCH_ID"
   );
 
   dom.resultsHead.innerHTML = `
@@ -655,9 +655,25 @@ export function renderTable(rows, visibleColumnKeys) {
     return;
   }
 
-  dom.resultsBody.innerHTML = rows.map((row) => `
-    <tr>
+  dom.resultsBody.innerHTML = rows.map((row, index) => {
+    const matchId = row.MATCH_ID;
+    const prevMatchId = rows[index - 1]?.MATCH_ID;
+    const nextMatchId = rows[index + 1]?.MATCH_ID;
+
+    const isGrouped = matchId && (matchId === prevMatchId || matchId === nextMatchId);
+    const isGroupStart = isGrouped && matchId !== prevMatchId;
+    const isGroupEnd = isGrouped && matchId !== nextMatchId;
+
+    const groupClasses = [
+      isGrouped ? "match-group-row" : "",
+      isGroupStart ? "match-group-start" : "",
+      isGroupEnd ? "match-group-end" : ""
+    ].filter(Boolean).join(" ");
+
+    return `
+    <tr class="${groupClasses}">
       ${visibleColumns.map((col) => `<td>${formatCell(col, row[col.key])}</td>`).join("")}
     </tr>
-  `).join("");
+  `;
+  }).join("");
 }

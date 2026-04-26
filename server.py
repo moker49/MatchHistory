@@ -64,6 +64,7 @@ root_logger.addHandler(file_handler)
 # DEFAULTS
 # =========================
 DEFAULT_VISIBLE_COLUMNS = [
+    "MATCH_ID",
     "PLAYER",
     "GAME_MODE",
     "CHAMPION",
@@ -163,6 +164,13 @@ def fetch_column_options():
         logging.info("Loaded options for %s list(s).", len(grouped_options))
         return grouped_options
 
+def ensure_internal_columns(search_request):
+    visible_columns_upper = [col.upper() for col in search_request["visible_columns"]]
+
+    if "MATCH_ID" not in visible_columns_upper:
+        search_request["visible_columns"].append("MATCH_ID")
+
+    return search_request
 
 def apply_initial_search_defaults(search_request):
     is_initial_search = (
@@ -415,6 +423,7 @@ def api_matches_search():
         payload = request.get_json(silent=True) or {}
         search_request = parse_match_search_request(payload)
         search_request = apply_initial_search_defaults(search_request)
+        search_request = ensure_internal_columns(search_request)
         result = search_matches(search_request)
 
         return jsonify({

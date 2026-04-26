@@ -130,13 +130,14 @@ p {
   position: fixed;
   top: 0;
   left: 0;
-  bottom: 0;
+  bottom: -50vh;
   z-index: 30;
   display: flex;
   flex-direction: column;
   width: min(480px, calc(100vw - 32px));
   overflow: hidden;
   padding: 20px 0 0 20px;
+  padding-bottom: calc(50vh + 10px);
   transition:
     transform var(--motion-slow) ease,
     opacity var(--motion-fast) ease;
@@ -645,7 +646,7 @@ td {
   padding: 12px 14px;
   text-align: left;
   white-space: nowrap;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 th {
@@ -657,6 +658,26 @@ th {
 
 tbody tr:hover {
   background: rgba(255, 255, 255, 0.03);
+}
+
+tbody tr.match-group-row {
+  background: rgba(79, 209, 197, 0.045);
+}
+
+tbody tr.match-group-row td:first-child {
+  border-left: 4px solid var(--accent);
+}
+
+tbody tr.match-group-start td {
+  border-top: 2px solid rgba(79, 209, 197, 0.35) !important;
+}
+
+tbody tr.match-group-end td {
+  border-bottom: 2px solid rgba(79, 209, 197, 0.35);
+}
+
+tbody tr.match-group-row:hover {
+  background: rgba(79, 209, 197, 0.075);
 }
 
 .table-sort-btn {
