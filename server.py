@@ -5,11 +5,30 @@ import logging
 import pypyodbc as odbc
 from logging.handlers import RotatingFileHandler
 import time
+from cachetools import TTLCache
+import hashlib
 
 RATE_LIMIT_WINDOW_SECONDS = 2.0
 _last_request_by_ip = {}
 app = Flask(__name__)
 CORS(app)
+
+SEARCH_CACHE_ENABLED = True
+SEARCH_CACHE_TTL_SECONDS = 86400
+SEARCH_CACHE_MAX_ITEMS = 300
+search_cache_version = None
+search_cache = TTLCache(
+    maxsize=SEARCH_CACHE_MAX_ITEMS,
+    ttl=SEARCH_CACHE_TTL_SECONDS
+)
+
+METADATA_CACHE_ENABLED = True
+METADATA_CACHE_TTL_SECONDS = 86400
+METADATA_CACHE_MAX_ITEMS = 10
+metadata_cache = TTLCache(
+    maxsize=METADATA_CACHE_MAX_ITEMS,
+    ttl=METADATA_CACHE_TTL_SECONDS
+)
 
 # =========================
 # CONFIG
@@ -75,6 +94,15 @@ DEFAULT_VISIBLE_COLUMNS = [
     "ASSISTS"
 ]
 
+DEFAULT_SEARCH_PLAYERS = [
+    "HR9wJTRTf0-Gi3BfVEJsnYR4TJtiM7kCtTgCCQnLM_RoiE0fvniJYPVIvgOdlBno7xnpJ79Yu0NwAA",
+    "8D6NUU33Guzdv3R43UBBpjZZS7sTlzGjDMmhpoc89CkNks1vhvwob-A4PwlQlvk_n2KCOIw5QkONmw",
+    "WVDEw2aG6FP08S0dc9aOZd7eA0G0M9aSov6wPTrGj4DK6WCPWR_Cg-HCapssk-zOChT_9l0lVXx4Hg",
+    "LBn849uoRjZ5UyYJrucUy-YkoJszDfRBlquhfGhz0ftp3jqagl6QBlSNvwES383H1XkZ8JllwmaPoQ",
+    "eLii3p9m_AC6OdjtTUUyXU2y0X3zp-I4kyc-QXNu7vBX0IPbANvRx4SZ1M8Aa1Ni48SSoI0-6oZRbw",
+    "R5Tqz9GSjFlgM0nXyjzN0ETtPYecY8X1v5lnYnko8kDykUPmvg0OABUQOeROzEofmlrIQXuxNWggow",
+    "wlgaFlDfW1y9v4LKFs1dvV8KPAR4RMhDDwRKjFJ_eoX74dQF5jUjrrOpsZlbhNCRVWlvjt0IMzPAYg"
+]
 
 # =========================
 # HELPERS
@@ -82,6 +110,77 @@ DEFAULT_VISIBLE_COLUMNS = [
 def get_connection():
     return odbc.connect(conn_string)
 
+def jsonify_with_cache(payload, max_age=METADATA_CACHE_TTL_SECONDS):
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = f"public, max-age={max_age}"
+    return response
+
+def get_search_cache_version():
+    with odbc.connect(conn_string) as con:
+        cursor = con.cursor()
+        cursor.execute("""
+            SELECT CACHE_VERSION
+            FROM dbo.APP_CACHE_STATE
+            WHERE CACHE_NAME = 'matches_search';
+        """)
+        row = cursor.fetchone()
+
+    if not row:
+        return 1
+
+    return int(row[0])
+
+def make_search_cache_key(search_request, cache_version):
+    normalized = json.dumps(
+        search_request,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str
+    )
+
+    raw_key = {
+        "cache_version": cache_version,
+        "search_request": normalized
+    }
+
+    return hashlib.sha256(
+        json.dumps(raw_key, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+def normalize_search_request(search_request):
+    search_request = search_request or {}
+
+    players = search_request.get("players")
+
+    if not players:
+        players = DEFAULT_SEARCH_PLAYERS
+
+    visible_columns = search_request.get("visible_columns", [])
+    if not visible_columns:
+        visible_columns = DEFAULT_VISIBLE_COLUMNS.copy()
+
+    sort_key = search_request.get("sort_key")
+    sort_direction = search_request.get("sort_direction")
+
+    if sort_key is not None:
+        sort_key = str(sort_key).strip().upper()
+        if not sort_key:
+            sort_key = None
+
+    sort_direction = str(sort_direction or "desc").lower()
+    if sort_direction not in ("asc", "desc"):
+        sort_direction = "desc"
+
+    return {
+        "players": players,
+        "visible_columns": visible_columns,
+        "filters": search_request.get("filters", []),
+        "page": search_request.get("page", 1),
+        "page_size": search_request.get("page_size", 200),
+        "filter_mode": search_request.get("filter_mode", "all"),
+        "sort_key": sort_key,
+        "sort_direction": sort_direction if sort_key else None
+    }
 
 def fetch_players():
     logging.info("Loading players from procedure: %s", players_proc)
@@ -364,46 +463,31 @@ def wait_for_rate_limit(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECO
 # =========================
 # ROUTES
 # =========================
-@app.get("/api/players")
-def api_players():
-    try:
-        players = fetch_players()
-        return jsonify({
-            "ok": True,
-            "players": players
-        })
-    except Exception:
-        logging.exception("Failed to load players.")
-        return jsonify({
-            "ok": False,
-            "error": "Failed to load players."
-        }), 500
-
-
-@app.get("/api/columns")
-def api_columns():
-    try:
-        columns = fetch_columns()
-        return jsonify({
-            "ok": True,
-            "columns": columns
-        })
-    except Exception:
-        logging.exception("Failed to load columns.")
-        return jsonify({
-            "ok": False,
-            "error": "Failed to load columns."
-        }), 500
-
-
 @app.get("/api/column-options")
 def api_column_options():
     try:
+        cache_key = "column_options"
+
+        if METADATA_CACHE_ENABLED:
+            cached = metadata_cache.get(cache_key)
+            if cached is not None:
+                return jsonify_with_cache({
+                    "ok": True,
+                    "options": cached,
+                    "cached": True
+                })
+
         options = fetch_column_options()
-        return jsonify({
+
+        if METADATA_CACHE_ENABLED:
+            metadata_cache[cache_key] = options
+
+        return jsonify_with_cache({
             "ok": True,
-            "options": options
+            "options": options,
+            "cached": False
         })
+
     except Exception:
         logging.exception("Failed to load column options.")
         return jsonify({
@@ -414,30 +498,47 @@ def api_column_options():
 
 @app.post("/api/matches/search")
 def api_matches_search():
-    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
-    rate_key = f"matches_search:{client_ip}"
-
-    wait_for_rate_limit(rate_key, window_seconds=2.0)
+    global search_cache_version
 
     try:
-        payload = request.get_json(silent=True) or {}
-        search_request = parse_match_search_request(payload)
-        search_request = apply_initial_search_defaults(search_request)
-        search_request = ensure_internal_columns(search_request)
+        raw_search_request = request.get_json(silent=True) or {}
+        search_request = normalize_search_request(raw_search_request)
+
+        current_version = get_search_cache_version()
+
+        if search_cache_version != current_version:
+            search_cache.clear()
+            search_cache_version = current_version
+            logging.info("Search cache cleared. New version=%s", current_version)
+
+        cache_key = make_search_cache_key(search_request, current_version)
+
+        if SEARCH_CACHE_ENABLED:
+            cached = search_cache.get(cache_key)
+            if cached is not None:
+                response = dict(cached)
+                response["cached"] = True
+                response["cache_version"] = current_version
+                return jsonify(response)
+
+        start_time = time.perf_counter()
+
         result = search_matches(search_request)
 
-        return jsonify({
-            "ok": True,
-            "rows": result["rows"],
-            "total_count": result["total_count"],
-            "page": result["page"],
-            "page_size": result["page_size"],
-            "total_pages": result["total_pages"]
-        })
+        elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
+
+        result["cached"] = False
+        result["query_ms"] = elapsed_ms
+        result["cache_version"] = current_version
+
+        if SEARCH_CACHE_ENABLED:
+            search_cache[cache_key] = dict(result)
+
+        return jsonify(result)
+
     except Exception:
         logging.exception("Failed to search matches.")
         return jsonify({
-            "ok": False,
             "error": "Failed to search matches."
         }), 500
 

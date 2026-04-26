@@ -88,6 +88,16 @@ def sleep_with_log(seconds: float, reason: str = "") -> None:
     time.sleep(seconds)
 
 
+def bump_search_cache_version(cursor):
+    cursor.execute("""
+        UPDATE dbo.APP_CACHE_STATE
+        SET
+            CACHE_VERSION = CACHE_VERSION + 1,
+            UPDATED_AT = sysdatetime()
+        WHERE CACHE_NAME = 'matches_search';
+    """)
+
+
 def riot_api_call(func, *args, **kwargs):
     """
     Wrapper for Riot API calls with retry handling.
@@ -400,6 +410,8 @@ def process_player(con, cursor, player_db):
                     player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
                 )
             else:
+                if epoch_insert_count > 0 or epoch_ghost_count > 0:
+                    bump_search_cache_version(cursor)
                 con.commit()
                 logging.info(
                     "%s | epoch=%s committed | inserted=%s | ghost=%s | skipped=%s",

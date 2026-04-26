@@ -41,7 +41,7 @@ function updatePaginationUi() {
 
 let latestRequestId = 0;
 let sortRefreshTimer = null;
-const SORT_REFRESH_DEBOUNCE_MS = 1000;
+const SORT_REFRESH_DEBOUNCE_MS = 300;
 
 function cancelScheduledSortRefresh() {
   if (sortRefreshTimer !== null) {
@@ -234,11 +234,6 @@ async function init() {
   });
   dom.resetBtn.addEventListener("click", resetControls);
 
-  const initialSearchPromise = searchMatches({
-    page: 1,
-    page_size: state.pageSize
-  });
-
   try {
     await loadPlayers();
   } catch (err) {
@@ -269,22 +264,9 @@ async function init() {
   });
 
   try {
-    const result = await initialSearchPromise;
-
-    state.currentPage = Math.max(1, Number(result.page) || 1);
-    state.totalPages = Math.max(1, Number(result.total_pages) || 1);
-    state.totalCount = Math.max(0, Number(result.total_count) || 0);
-
-    const enabledColumns = getEnabledColumns();
-    renderTable(result.rows || [], enabledColumns);
-
-    const totalCount = result.total_count ?? 0;
-    dom.resultsSummary.textContent = `${totalCount.toLocaleString()} records`;
-
-    updatePaginationUi();
+    await applyFilters(1);
   } catch (err) {
     console.error("Failed to load initial matches:", err);
-    await applyFilters(1);
   }
 }
 
