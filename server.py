@@ -14,16 +14,16 @@ app = Flask(__name__)
 CORS(app)
 
 SEARCH_CACHE_ENABLED = True
-SEARCH_CACHE_TTL_SECONDS = 86400
+SEARCH_CACHE_TTL_SECONDS = 60*60*24*30 # 1 month
 SEARCH_CACHE_MAX_ITEMS = 300
-search_cache_version = None
+search_cache_version = 1
 search_cache = TTLCache(
     maxsize=SEARCH_CACHE_MAX_ITEMS,
     ttl=SEARCH_CACHE_TTL_SECONDS
 )
 
 METADATA_CACHE_ENABLED = True
-METADATA_CACHE_TTL_SECONDS = 86400
+METADATA_CACHE_TTL_SECONDS = 60*60*24*30 # 1 month
 METADATA_CACHE_MAX_ITEMS = 10
 metadata_cache = TTLCache(
     maxsize=METADATA_CACHE_MAX_ITEMS,
@@ -114,21 +114,6 @@ def jsonify_with_cache(payload, max_age=METADATA_CACHE_TTL_SECONDS):
     response = jsonify(payload)
     response.headers["Cache-Control"] = f"public, max-age={max_age}"
     return response
-
-def get_search_cache_version():
-    with odbc.connect(conn_string) as con:
-        cursor = con.cursor()
-        cursor.execute("""
-            SELECT CACHE_VERSION
-            FROM dbo.APP_CACHE_STATE
-            WHERE CACHE_NAME = 'matches_search';
-        """)
-        row = cursor.fetchone()
-
-    if not row:
-        return 1
-
-    return int(row[0])
 
 def make_search_cache_key(search_request, cache_version):
     normalized = json.dumps(
@@ -496,6 +481,21 @@ def api_column_options():
         }), 500
 
 
+@app.post("/api/cache/invalidate")
+def api_cache_invalidate():
+    global search_cache_version
+
+    search_cache.clear()
+    search_cache_version += 1
+
+    logging.info("Search cache invalidated via API. New version=%s", search_cache_version)
+
+    return jsonify({
+        "ok": True,
+        "cache_version": search_cache_version
+    })
+
+
 @app.post("/api/matches/search")
 def api_matches_search():
     global search_cache_version
@@ -504,12 +504,7 @@ def api_matches_search():
         raw_search_request = request.get_json(silent=True) or {}
         search_request = normalize_search_request(raw_search_request)
 
-        current_version = get_search_cache_version()
-
-        if search_cache_version != current_version:
-            search_cache.clear()
-            search_cache_version = current_version
-            logging.info("Search cache cleared. New version=%s", current_version)
+        current_version = search_cache_version
 
         cache_key = make_search_cache_key(search_request, current_version)
 
