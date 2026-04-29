@@ -14,6 +14,7 @@ with open("keys.json") as json_file:
     keys = json.load(json_file)
 
 cache_invalidate_url = config.get("cache_invalidate_url", "http://127.0.0.1:5001/api/cache/invalidate")
+cache_warm_url = config.get("cache_warm_url", "http://127.0.0.1:5001/api/cache/warm")
 
 call_interval = config.get("call_interval", 1.2)
 api_key = keys["riot_api_key"]
@@ -92,7 +93,7 @@ def sleep_with_log(seconds: float, reason: str = "") -> None:
     time.sleep(seconds)
 
 
-def invalidate_search_cache():
+def invalidate_cache():
     try:
         req = urllib.request.Request(
             cache_invalidate_url,
@@ -101,12 +102,29 @@ def invalidate_search_cache():
             method="POST"
         )
 
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=30) as response:
             body = response.read().decode("utf-8", errors="replace")
             logging.info("Search cache invalidated. Response: %s", body)
 
     except Exception:
         logging.exception("Failed to invalidate search cache.")
+
+
+def warm_cache():
+    try:
+        req = urllib.request.Request(
+            cache_warm_url,
+            data=b"{}",
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+
+        with urllib.request.urlopen(req, timeout=60) as response:
+            body = response.read().decode("utf-8", errors="replace")
+            logging.info("Cache warmed. Response: %s", body[:500])
+
+    except Exception:
+        logging.exception("Failed to warm cache.")
 
 
 def riot_api_call(func, *args, **kwargs):
@@ -424,7 +442,8 @@ def process_player(con, cursor, player_db):
                 had_new_data = epoch_insert_count > 0 or epoch_ghost_count > 0
                 con.commit()
                 if had_new_data:
-                    invalidate_search_cache()
+                    invalidate_cache()
+                    warm_cache()
                 logging.info(
                     "%s | epoch=%s committed | inserted=%s | ghost=%s | skipped=%s",
                     player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count

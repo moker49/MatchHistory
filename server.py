@@ -83,7 +83,6 @@ root_logger.addHandler(file_handler)
 # DEFAULTS
 # =========================
 DEFAULT_VISIBLE_COLUMNS = [
-    "MATCH_ID",
     "PLAYER",
     "GAME_MODE",
     "CHAMPION",
@@ -136,13 +135,17 @@ def normalize_search_request(search_request):
     search_request = search_request or {}
 
     players = search_request.get("players")
-
     if not players:
         players = DEFAULT_SEARCH_PLAYERS
+    players = [str(player).strip() for player in players if str(player).strip()]
+    players = sorted(set(players))
 
     visible_columns = search_request.get("visible_columns", [])
     if not visible_columns:
         visible_columns = DEFAULT_VISIBLE_COLUMNS.copy()
+    if "MATCH_ID" not in visible_columns:
+        visible_columns.append("MATCH_ID")
+        visible_columns = sorted(set(visible_columns))
 
     sort_key = search_request.get("sort_key")
     sort_direction = search_request.get("sort_direction")
@@ -444,6 +447,45 @@ def wait_for_rate_limit(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECO
 
     _last_request_by_ip[key] = time.time()
 
+def run_cache_warm():
+    warmed = {}
+
+    # column-options
+    column_options_cache_key = "column_options"
+
+    if METADATA_CACHE_ENABLED and metadata_cache.get(column_options_cache_key) is None:
+        options = fetch_column_options()
+        metadata_cache[column_options_cache_key] = options
+        warmed["column_options"] = {"cached": False}
+    else:
+        warmed["column_options"] = {"cached": True}
+
+    # default search
+    default_search_request = normalize_search_request({
+        "players": DEFAULT_SEARCH_PLAYERS,
+        "visible_columns": DEFAULT_VISIBLE_COLUMNS,
+        "filter_mode": "all",
+        "filters": [],
+        "page": 1,
+        "page_size": 100,
+        "sort_key": "DATE",
+        "sort_direction": "desc"
+    })
+
+    current_version = search_cache_version
+    search_cache_key = make_search_cache_key(default_search_request, current_version)
+
+    logging.debug("Warm cache key=%s request=%s", search_cache_key, json.dumps(default_search_request, sort_keys=True))
+
+    if SEARCH_CACHE_ENABLED and search_cache.get(search_cache_key) is None:
+        result = search_matches(default_search_request)
+        result["cache_version"] = current_version
+        search_cache[search_cache_key] = dict(result)
+        warmed["default_search"] = {"cached": False}
+    else:
+        warmed["default_search"] = {"cached": True}
+
+    return warmed
 
 # =========================
 # ROUTES
@@ -495,6 +537,23 @@ def api_cache_invalidate():
         "cache_version": search_cache_version
     })
 
+@app.post("/api/cache/warm")
+def api_cache_warm():
+    try:
+        warmed = run_cache_warm()
+
+        return jsonify({
+            "ok": True,
+            "warmed": warmed
+        })
+
+    except Exception:
+        logging.exception("Failed to warm caches.")
+        return jsonify({
+            "ok": False,
+            "error": "Failed to warm caches."
+        }), 500
+
 
 @app.post("/api/matches/search")
 def api_matches_search():
@@ -507,6 +566,8 @@ def api_matches_search():
         current_version = search_cache_version
 
         cache_key = make_search_cache_key(search_request, current_version)
+
+        logging.debug("Search cache key=%s request=%s", cache_key, json.dumps(search_request, sort_keys=True))
 
         if SEARCH_CACHE_ENABLED:
             cached = search_cache.get(cache_key)
@@ -543,4 +604,8 @@ def api_matches_search():
 # =========================
 if __name__ == "__main__":
     logging.info("Starting API on %s:%s", api_host, api_port)
+    try:
+        run_cache_warm()
+    except Exception:
+        logging.exception("Startup warm failed.")
     app.run(host=api_host, port=api_port, debug=api_debug)
