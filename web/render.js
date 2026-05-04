@@ -346,6 +346,7 @@ export function renderColumnControls() {
   dom.columnsContainer.innerHTML = "";
 
   state.allColumns.forEach((column) => {
+    if ("MATCH_ID" === column.key) return;
     const card = document.createElement("div");
     const supportsColumnFilters = supportsFilters(column);
 

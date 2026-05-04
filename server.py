@@ -493,27 +493,42 @@ def run_cache_warm():
 @app.get("/api/column-options")
 def api_column_options():
     try:
-        cache_key = "column_options"
+        cache_key = "column_options_response"
 
         if METADATA_CACHE_ENABLED:
-            cached = metadata_cache.get(cache_key)
-            if cached is not None:
-                return jsonify_with_cache({
-                    "ok": True,
-                    "options": cached,
-                    "cached": True
-                })
+            cached_json = metadata_cache.get(cache_key)
+            if cached_json is not None:
+                response = app.response_class(
+                    response=cached_json,
+                    status=200,
+                    mimetype="application/json"
+                )
+                response.headers["Cache-Control"] = f"public, max-age={METADATA_CACHE_TTL_SECONDS}"
+                return response
 
         options = fetch_column_options()
 
-        if METADATA_CACHE_ENABLED:
-            metadata_cache[cache_key] = options
-
-        return jsonify_with_cache({
+        payload = json.dumps({
             "ok": True,
             "options": options,
             "cached": False
         })
+
+        if METADATA_CACHE_ENABLED:
+            cached_payload = json.dumps({
+                "ok": True,
+                "options": options,
+                "cached": True
+            })
+            metadata_cache[cache_key] = cached_payload
+
+        response = app.response_class(
+            response=payload,
+            status=200,
+            mimetype="application/json"
+        )
+        response.headers["Cache-Control"] = f"public, max-age={METADATA_CACHE_TTL_SECONDS}"
+        return response
 
     except Exception:
         logging.exception("Failed to load column options.")
