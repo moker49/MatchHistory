@@ -249,13 +249,6 @@ async function init() {
 
   await wakePromise;
 
-  try {
-    await loadColumnOptions();
-  } catch (err) {
-    console.error("Failed to load column options:", err);
-    showColumnLoadError();
-  }
-
   renderPlayerOptions();
   renderColumnControls();
 
@@ -264,11 +257,23 @@ async function init() {
     scheduleSortRefresh();
   });
 
-  try {
-    await applyFilters(1);
-  } catch (err) {
+  const columnOptionsPromise = loadColumnOptions()
+    .then(() => {
+      renderColumnControls();
+    })
+    .catch((err) => {
+      console.error("Failed to load column options:", err);
+      showColumnLoadError();
+    });
+
+  const initialSearchPromise = applyFilters(1).catch((err) => {
     console.error("Failed to load initial matches:", err);
-  }
+  });
+
+  await Promise.all([
+    columnOptionsPromise,
+    initialSearchPromise
+  ]);
 }
 
 init();
