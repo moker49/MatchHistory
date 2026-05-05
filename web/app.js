@@ -16,6 +16,10 @@ import {
   setSortChangedHandler
 } from "./render.js";
 
+const wakePromise = fetch("/api/wake").catch((err) => {
+  console.warn("Wake request failed:", err);
+});
+
 function updatePaginationUi() {
   if (dom.pageNumberInput) {
     dom.pageNumberInput.value = String(state.currentPage);
@@ -134,11 +138,6 @@ function resetControls() {
 
   renderPlayerOptions();
 
-  // const globalMode = document.querySelector('input[name="filterMode"][value="all"]');
-  // if (globalMode) {
-  //   globalMode.checked = true;
-  // }
-
   document.querySelectorAll(".column-card").forEach((card) => {
     const key = card.dataset.key;
     const column = state.allColumns.find((c) => c.key === key);
@@ -247,6 +246,8 @@ async function init() {
     console.error("Failed to load columns:", err);
     showColumnLoadError();
   }
+
+  await wakePromise;
 
   try {
     await loadColumnOptions();

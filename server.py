@@ -55,6 +55,8 @@ api_host = config.get("api_host", "127.0.0.1")
 api_port = int(config.get("api_port", 5001))
 api_debug = bool(config.get("api_debug", False))
 
+COLUMN_OPTIONS_CACHE_KEY = "column_options"
+
 
 # =========================
 # LOGGING
@@ -141,11 +143,14 @@ def normalize_search_request(search_request):
     players = sorted(set(players))
 
     visible_columns = search_request.get("visible_columns", [])
+    visible_columns = [str(col).strip().upper() for col in visible_columns if str(col).strip()]
+
     if not visible_columns:
         visible_columns = DEFAULT_VISIBLE_COLUMNS.copy()
     if "MATCH_ID" not in visible_columns:
         visible_columns.append("MATCH_ID")
-        visible_columns = sorted(set(visible_columns))
+
+    visible_columns = sorted(set(visible_columns))
 
     sort_key = search_request.get("sort_key")
     sort_direction = search_request.get("sort_direction")
@@ -450,12 +455,13 @@ def wait_for_rate_limit(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECO
 def run_cache_warm():
     warmed = {}
 
-    # column-options
-    column_options_cache_key = "column_options"
-
-    if METADATA_CACHE_ENABLED and metadata_cache.get(column_options_cache_key) is None:
+    if METADATA_CACHE_ENABLED and metadata_cache.get(COLUMN_OPTIONS_CACHE_KEY) is None:
         options = fetch_column_options()
-        metadata_cache[column_options_cache_key] = options
+        metadata_cache[COLUMN_OPTIONS_CACHE_KEY] = json.dumps({
+            "ok": True,
+            "options": options,
+            "cached": True
+        })
         warmed["column_options"] = {"cached": False}
     else:
         warmed["column_options"] = {"cached": True}
@@ -492,8 +498,10 @@ def run_cache_warm():
 # =========================
 @app.get("/api/column-options")
 def api_column_options():
+    logging.debug("column-options handler entered")
+    started = time.perf_counter()
     try:
-        cache_key = "column_options_response"
+        cache_key = COLUMN_OPTIONS_CACHE_KEY
 
         if METADATA_CACHE_ENABLED:
             cached_json = metadata_cache.get(cache_key)
@@ -536,6 +544,9 @@ def api_column_options():
             "ok": False,
             "error": "Failed to load column options."
         }), 500
+    finally:
+        elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+        logging.debug("column-options endpoint completed in %sms", elapsed_ms)
 
 
 @app.post("/api/cache/invalidate")
@@ -572,6 +583,8 @@ def api_cache_warm():
 
 @app.post("/api/matches/search")
 def api_matches_search():
+    logging.debug("search handler entered")
+    started = time.perf_counter()
     global search_cache_version
 
     try:
@@ -612,15 +625,30 @@ def api_matches_search():
         return jsonify({
             "error": "Failed to search matches."
         }), 500
+    finally:
+        elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+        logging.debug("search endpoint completed in %sms", elapsed_ms)
+
+@app.get("/api/wake")
+def api_ping():
+    return jsonify({"ok": True})
 
 
 # =========================
 # MAIN
 # =========================
 if __name__ == "__main__":
+    logging.warn("")
     logging.info("Starting API on %s:%s", api_host, api_port)
+
     try:
         run_cache_warm()
     except Exception:
-        logging.exception("Startup warm failed.")
-    app.run(host=api_host, port=api_port, debug=api_debug)
+        logging.exception("Startup cache warm failed.")
+
+    app.run(
+        host=api_host,
+        port=api_port,
+        debug=api_debug,
+        threaded=True
+    )
