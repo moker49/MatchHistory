@@ -188,6 +188,10 @@ function initCollapsibleSettings() {
     setPanelOpen(false);
   });
 
+  dom.mobileFiltersBtn?.addEventListener("click", () => {
+    setPanelOpen(true);
+  });
+
   const startsOpen = !dom.controlsPanel.classList.contains("collapsed");
   dom.settingsToggle.setAttribute("aria-expanded", String(startsOpen));
   dom.settingsToggleIcon.textContent = startsOpen ? "left_panel_close" : "filter_list";

@@ -850,6 +850,76 @@ input[type="number"] {
   }
 }
 
+.mobile-app-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    width: 100%;
+    margin: 0;
+  }
+
+  .controls-header {
+    justify-content: flex-start;
+  }
+
+  .controls-panel.collapsed {
+    transform: translateX(-100%);
+  }
+
+  .page-header {
+    display: none;
+  }
+
+  .mobile-app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    height: 72px;
+    padding: 0 16px;
+
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mobile-app-bar h1 {
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .mobile-filters-btn {
+    display: grid;
+    place-items: center;
+
+    width: 40px;
+    height: 40px;
+
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+  }
+
+  .mobile-filters-btn:hover {
+    background: var(--surface-3);
+    border-color: var(--border-hover);
+  }
+
+  .table-panel {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .controls-panel,
   .panel-collapse-btn,
