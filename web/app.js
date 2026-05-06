@@ -16,10 +16,6 @@ import {
   setSortChangedHandler
 } from "./render.js";
 
-const wakePromise = fetch("/api/wake").catch((err) => {
-  console.warn("Wake request failed:", err);
-});
-
 function updatePaginationUi() {
   if (dom.pageNumberInput) {
     dom.pageNumberInput.value = String(state.currentPage);
@@ -246,8 +242,6 @@ async function init() {
     console.error("Failed to load columns:", err);
     showColumnLoadError();
   }
-
-  await wakePromise;
 
   renderPlayerOptions();
   renderColumnControls();

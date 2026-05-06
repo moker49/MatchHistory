@@ -7,6 +7,7 @@ from logging.handlers import RotatingFileHandler
 import time
 from cachetools import TTLCache
 import hashlib
+import datetime
 
 RATE_LIMIT_WINDOW_SECONDS = 2.0
 _last_request_by_ip = {}
@@ -80,6 +81,13 @@ file_handler = RotatingFileHandler(
 file_handler.setFormatter(log_formatter)
 root_logger.addHandler(file_handler)
 
+class IgnoreWakeFilter(logging.Filter):
+    def filter(self, record):
+        message = record.getMessage()
+        return "/api/wake" not in message
+
+werkzeug_logger = logging.getLogger("werkzeug")
+werkzeug_logger.addFilter(IgnoreWakeFilter())
 
 # =========================
 # DEFAULTS
@@ -631,6 +639,16 @@ def api_matches_search():
 
 @app.get("/api/wake")
 def api_ping():
+    now = datetime.now().strftime("%d/%b/%Y %H:%M:%S")
+    logging.debug(
+        '%s - - [%s] "%s %s %s" %s -',
+        request.remote_addr or "-",
+        now,
+        request.method,
+        request.path,
+        request.environ.get("SERVER_PROTOCOL", "HTTP/1.1"),
+        200
+    )
     return jsonify({"ok": True})
 
 
