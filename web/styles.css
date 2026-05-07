@@ -134,7 +134,7 @@ p {
   z-index: 30;
   display: flex;
   flex-direction: column;
-  width: min(480px, calc(100vw - 32px));
+  width: min(480px, 100vw);
   overflow: hidden;
   padding: 20px 0 0 20px;
   padding-bottom: calc(50vh + 10px);
@@ -233,7 +233,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
   margin-left: auto;
 }
 
@@ -250,7 +250,7 @@ p {
 }
 
 .pagination-input {
-  width: 110px;
+  width: 150px;
   padding: 10px 12px;
   background: var(--surface-2);
   color: var(--text);
@@ -910,6 +910,32 @@ input[type="number"] {
   .mobile-filters-btn:hover {
     background: var(--surface-3);
     border-color: var(--border-hover);
+  }
+
+  .results-header {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .pagination-nav {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+  }
+
+  .table-description {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .table-description p:last-child {
+    text-align: right;
   }
 
   .table-panel {
