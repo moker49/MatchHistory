@@ -40,6 +40,7 @@ export const dom = {
     settingsToggleIcon: document.getElementById("settingsToggleIcon"),
     controlsPanel: document.getElementById("controlsPanel"),
     mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
+    mobileTableCompactBtn: document.getElementById('mobileTableCompactBtn'),
     panelBackdrop: document.getElementById("panelBackdrop"),
     layout: document.querySelector(".layout")
 };

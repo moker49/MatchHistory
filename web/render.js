@@ -469,6 +469,14 @@ function formatDateCell(value) {
   const day = String(date.getDate()).padStart(2, "0");
   const year = date.getFullYear();
 
+  if (isMobileTableCompact()) {
+    return `
+      <span class="date-cell">
+        <span class="date-main">${month}-${day}</span>
+      </span>
+    `;
+  }
+
   const datePart = `${month}-${day}-${year}`;
 
   const timePart = date.toLocaleTimeString(undefined, {
@@ -484,8 +492,75 @@ function formatDateCell(value) {
   `;
 }
 
+function isMobileTableCompact() {
+  return document.body.classList.contains("mobile-table-compact");
+}
+
+function formatCompactChampionName(value) {
+  const championName = String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ");
+
+  if (championName.length <= 9) {
+    return championName;
+  }
+
+  const spaceCount = (championName.match(/ /g) || []).length;
+
+  if (spaceCount > 1) {
+    return championName.split(" ")[0];
+  }
+
+  if (spaceCount === 1) {
+    const [firstWord, secondWord] = championName.split(" ");
+    const noSpaceName = `${firstWord}${secondWord}`;
+
+    if (noSpaceName.length <= 9) {
+      return noSpaceName;
+    }
+
+    return `${firstWord.charAt(0)}.${secondWord}`;
+  }
+
+  return championName;
+}
+
+function getSelectLabel(column, value) {
+  if (column.type !== "select" || !Array.isArray(column.options) || column.options.length === 0) {
+    return value;
+  }
+
+  const match = column.options.find((option) => {
+    const optionValue = typeof option === "string" ? option : option.value;
+    return String(optionValue) === String(value);
+  });
+
+  if (!match) {
+    return value;
+  }
+
+  return typeof match === "string" ? match : (match.label ?? match.value);
+}
+
 export function formatCell(column, value) {
   const key = column.key;
+
+  if (isMobileTableCompact()) {
+    if (key === "GAME_MODE") {
+      const gameModeLabel = getSelectLabel(column, value);
+
+      if (gameModeLabel === "Swiftplay") {
+        return "Swift";
+      }
+
+      return escapeHtml(gameModeLabel);
+    }
+
+    if (key === "CHAMPION") {
+      const championLabel = getSelectLabel(column, value);
+      return escapeHtml(formatCompactChampionName(championLabel));
+    }
+  }
 
   if (key === "RESULT") {
     if (value === "True") {
@@ -542,15 +617,7 @@ export function formatCell(column, value) {
   }
 
   if (column.type === "select" && Array.isArray(column.options) && column.options.length > 0) {
-    const match = column.options.find((option) => {
-      const optionValue = typeof option === "string" ? option : option.value;
-      return String(optionValue) === String(value);
-    });
-
-    if (match) {
-      const label = typeof match === "string" ? match : (match.label ?? match.value);
-      return escapeHtml(label);
-    }
+    return escapeHtml(getSelectLabel(column, value));
   }
 
   if (column.key === "DATE") {
@@ -598,6 +665,22 @@ function toggleSort(column) {
   }
 }
 
+function getColumnHeaderLabel(column) {
+  if (!document.body.classList.contains("mobile-table-compact")) {
+    return column.label;
+  }
+
+  const compactLabels = {
+    GAME_MODE: "MODE",
+    CHAMPION: "CHAMP",
+    KILLS: "K",
+    DEATHS: "D",
+    ASSISTS: "A"
+  };
+
+  return compactLabels[column.key] ?? column.label;
+}
+
 export function renderTable(rows, visibleColumnKeys) {
   state.lastRows = rows;
   state.lastVisibleColumnKeys = visibleColumnKeys;
@@ -609,15 +692,16 @@ export function renderTable(rows, visibleColumnKeys) {
   dom.resultsHead.innerHTML = `
     <tr>
       ${visibleColumns.map((col) => {
-    const sortable = isSortableColumn(col);
-    const isActiveSort = state.sort.key === col.key;
-    const indicator = getSortIndicator(col);
+        const sortable = isSortableColumn(col);
+        const isActiveSort = state.sort.key === col.key;
+        const indicator = getSortIndicator(col);
+        const headerLabel = getColumnHeaderLabel(col);
 
-    if (!sortable) {
-      return `<th>${escapeHtml(col.label)}</th>`;
-    }
+        if (!sortable) {
+          return `<th>${escapeHtml(headerLabel)}</th>`;
+        }
 
-    return `
+        return `
           <th>
             <button
               type="button"
@@ -625,12 +709,12 @@ export function renderTable(rows, visibleColumnKeys) {
               data-sort-key="${escapeHtml(col.key)}"
               aria-label="Sort by ${escapeHtml(col.label)} ${isActiveSort ? state.sort.direction : "ascending"}"
             >
-              <span class="table-sort-label">${escapeHtml(col.label)}</span>
+              <span class="table-sort-label">${escapeHtml(headerLabel)}</span>
               <span class="table-sort-indicator" aria-hidden="true">${indicator}</span>
             </button>
           </th>
         `;
-  }).join("")}
+      }).join("")}
     </tr>
   `;
 
@@ -672,9 +756,9 @@ export function renderTable(rows, visibleColumnKeys) {
     ].filter(Boolean).join(" ");
 
     return `
-    <tr class="${groupClasses}">
-      ${visibleColumns.map((col) => `<td>${formatCell(col, row[col.key])}</td>`).join("")}
-    </tr>
-  `;
+      <tr class="${groupClasses}">
+        ${visibleColumns.map((col) => `<td>${formatCell(col, row[col.key])}</td>`).join("")}
+      </tr>
+    `;
   }).join("");
 }

@@ -16,12 +16,16 @@
 
 <body>
   <div class="app-shell">
-  <header class="mobile-app-bar">
-    <button id="mobileFiltersBtn" class="mobile-filters-btn" type="button" aria-label="Open filters">
+  <header class="mobile-top-bar">
+    <button id="mobileFiltersBtn" class="mobile-top-bar-btn" type="button" aria-label="Open filters">
       <span class="material-symbols-rounded">filter_list</span>
     </button>
 
     <h1>Match History</h1>
+
+    <button id="mobileTableCompactBtn" class="mobile-top-bar-btn" type="button" aria-pressed="false">
+		  <span class="material-symbols-rounded">compress</span>
+	  </button>
   </header>
 
     <header class="page-header">
@@ -60,7 +64,7 @@
       </section>
 
       <section class="panel table-panel">
-        <div class="panel-header results-header">
+        <div class="panel-header">
           <div class="table-description">
             <p id="resultsSummary">-</p>
             <p>Unavailable: Brawl, Mayhem</p>

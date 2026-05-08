@@ -192,6 +192,12 @@ function initCollapsibleSettings() {
     setPanelOpen(true);
   });
 
+  dom.mobileTableCompactBtn?.addEventListener('click', function () {
+		const isCompact = document.body.classList.toggle('mobile-table-compact');
+		mobileTableCompactBtn.setAttribute('aria-pressed', isCompact ? 'true' : 'false');
+    renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []);
+	});
+
   const startsOpen = !dom.controlsPanel.classList.contains("collapsed");
   dom.settingsToggle.setAttribute("aria-expanded", String(startsOpen));
   dom.settingsToggleIcon.textContent = startsOpen ? "left_panel_close" : "filter_list";
