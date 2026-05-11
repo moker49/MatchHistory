@@ -16,17 +16,17 @@
 
 <body>
   <div class="app-shell">
-  <header class="mobile-top-bar">
-    <button id="mobileFiltersBtn" class="mobile-top-bar-btn" type="button" aria-label="Open filters">
-      <span class="material-symbols-rounded">filter_list</span>
-    </button>
+    <header class="mobile-top-bar">
+      <button id="mobileFiltersBtn" class="mobile-top-bar-btn" type="button" aria-label="Open filters">
+        <span class="material-symbols-rounded">filter_list</span>
+      </button>
 
-    <h1>Match History</h1>
+      <h1>Match History</h1>
 
-    <button id="mobileTableCompactBtn" class="mobile-top-bar-btn" type="button" aria-pressed="false">
-		  <span class="material-symbols-rounded">compress</span>
-	  </button>
-  </header>
+      <button id="mobileTableCompactBtn" class="mobile-top-bar-btn" type="button" aria-pressed="false">
+        <span id="mobileTableCompactIcon" class="material-symbols-rounded">horizontal_align_center</span>
+      </button>
+    </header>
 
     <header class="page-header">
       <div>
@@ -64,7 +64,7 @@
       </section>
 
       <section class="panel table-panel">
-        <div class="panel-header">
+        <div class="table-panel-header panel-header">
           <div class="table-description">
             <p id="resultsSummary">-</p>
             <p>Unavailable: Brawl, Mayhem</p>
@@ -83,7 +83,7 @@
           </form>
         </div>
 
-        <div class="table-wrap">
+        <div class="table-panel-scroll table-wrap">
           <table id="resultsTable">
             <thead id="resultsHead"></thead>
             <tbody id="resultsBody"></tbody>

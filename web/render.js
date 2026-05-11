@@ -496,6 +496,11 @@ function isMobileTableCompact() {
   return document.body.classList.contains("mobile-table-compact");
 }
 
+function cutChampionName(value) {
+  if (value.length <= 7) return value;
+  return `${value.substring(0, 6)}.`
+}
+
 function formatCompactChampionName(value) {
   const championName = String(value ?? "")
     .trim()
@@ -553,12 +558,16 @@ export function formatCell(column, value) {
         return "Swift";
       }
 
+      if (gameModeLabel === "Classic") {
+        return "5v5";
+      }
+
       return escapeHtml(gameModeLabel);
     }
 
     if (key === "CHAMPION") {
       const championLabel = getSelectLabel(column, value);
-      return escapeHtml(formatCompactChampionName(championLabel));
+      return escapeHtml(cutChampionName(formatCompactChampionName(championLabel)));
     }
   }
 
@@ -692,16 +701,16 @@ export function renderTable(rows, visibleColumnKeys) {
   dom.resultsHead.innerHTML = `
     <tr>
       ${visibleColumns.map((col) => {
-        const sortable = isSortableColumn(col);
-        const isActiveSort = state.sort.key === col.key;
-        const indicator = getSortIndicator(col);
-        const headerLabel = getColumnHeaderLabel(col);
+    const sortable = isSortableColumn(col);
+    const isActiveSort = state.sort.key === col.key;
+    const indicator = getSortIndicator(col);
+    const headerLabel = getColumnHeaderLabel(col);
 
-        if (!sortable) {
-          return `<th>${escapeHtml(headerLabel)}</th>`;
-        }
+    if (!sortable) {
+      return `<th>${escapeHtml(headerLabel)}</th>`;
+    }
 
-        return `
+    return `
           <th>
             <button
               type="button"
@@ -714,7 +723,7 @@ export function renderTable(rows, visibleColumnKeys) {
             </button>
           </th>
         `;
-      }).join("")}
+  }).join("")}
     </tr>
   `;
 

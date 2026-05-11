@@ -41,6 +41,7 @@ export const dom = {
     controlsPanel: document.getElementById("controlsPanel"),
     mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
     mobileTableCompactBtn: document.getElementById('mobileTableCompactBtn'),
+    mobileTableCompactIcon: document.getElementById("mobileTableCompactIcon"),
     panelBackdrop: document.getElementById("panelBackdrop"),
     layout: document.querySelector(".layout")
 };

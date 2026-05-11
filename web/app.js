@@ -172,7 +172,7 @@ function initCollapsibleSettings() {
   function setPanelOpen(isOpen) {
     dom.controlsPanel.classList.toggle("collapsed", !isOpen);
     dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
-    dom.settingsToggleIcon.textContent = isOpen ? "left_panel_close" : "filter_list";
+    dom.settingsToggleIcon.textContent = isOpen ? "close" : "filter_list";
 
     if (dom.panelBackdrop) {
       dom.panelBackdrop.classList.toggle("visible", isOpen);
@@ -193,14 +193,25 @@ function initCollapsibleSettings() {
   });
 
   dom.mobileTableCompactBtn?.addEventListener('click', function () {
-		const isCompact = document.body.classList.toggle('mobile-table-compact');
-		mobileTableCompactBtn.setAttribute('aria-pressed', isCompact ? 'true' : 'false');
+    const isCompact = document.body.classList.toggle("mobile-table-compact");
+
+    mobileTableCompactBtn.setAttribute("aria-pressed", isCompact ? "true" : "false");
+    mobileTableCompactBtn.setAttribute(
+      "aria-label",
+      isCompact ? "Disable compact table" : "Enable compact table"
+    );
+
+    if (mobileTableCompactIcon) {
+      mobileTableCompactIcon.textContent = isCompact
+        ? "arrows_outward"
+        : "horizontal_align_center";
+    }
+
     renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []);
-	});
+  });
 
   const startsOpen = !dom.controlsPanel.classList.contains("collapsed");
-  dom.settingsToggle.setAttribute("aria-expanded", String(startsOpen));
-  dom.settingsToggleIcon.textContent = startsOpen ? "left_panel_close" : "filter_list";
+  setPanelOpen(startsOpen);
 
   if (dom.panelBackdrop) {
     dom.panelBackdrop.classList.toggle("visible", startsOpen);
