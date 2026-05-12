@@ -12,7 +12,6 @@ import datetime
 RATE_LIMIT_WINDOW_SECONDS = 2.0
 _last_request_by_ip = {}
 app = Flask(__name__)
-CORS(app)
 
 SEARCH_CACHE_ENABLED = True
 SEARCH_CACHE_TTL_SECONDS = 60*60*24*30 # 1 month
@@ -55,6 +54,21 @@ conn_string = f"""
 api_host = config.get("api_host", "127.0.0.1")
 api_port = int(config.get("api_port", 5001))
 api_debug = bool(config.get("api_debug", False))
+internal_api_token = keys.get("internal_api_token")
+
+cors_origins = config.get("cors_origins", [
+    "https://lol.efren.org",
+    "http://localhost:5001",
+    "http://127.0.0.1:5001"
+])
+
+CORS(app, resources={
+    r"/api/*": {
+        "origins": cors_origins,
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "X-Internal-Token"]
+    }
+})
 
 COLUMN_OPTIONS_CACHE_KEY = "column_options"
 
@@ -123,6 +137,31 @@ def jsonify_with_cache(payload, max_age=METADATA_CACHE_TTL_SECONDS):
     response = jsonify(payload)
     response.headers["Cache-Control"] = f"public, max-age={max_age}"
     return response
+
+def get_client_ip():
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        first_ip = forwarded_for.split(",")[0].strip()
+        if first_ip:
+            return first_ip
+
+    cloudflare_ip = request.headers.get("CF-Connecting-IP", "").strip()
+    if cloudflare_ip:
+        return cloudflare_ip
+
+    real_ip = request.headers.get("X-Real-IP", "").strip()
+    if real_ip:
+        return real_ip
+
+    return request.remote_addr or "unknown"
+
+def require_internal_token():
+    if not internal_api_token:
+        logging.error("Internal API token is not configured. Add internal_api_token to keys.json.")
+        return False
+
+    provided_token = request.headers.get("X-Internal-Token", "")
+    return provided_token == internal_api_token
 
 def make_search_cache_key(search_request, cache_version):
     normalized = json.dumps(
@@ -561,6 +600,12 @@ def api_column_options():
 def api_cache_invalidate():
     global search_cache_version
 
+    if not require_internal_token():
+        return jsonify({
+            "ok": False,
+            "error": "Unauthorized"
+        }), 401
+
     search_cache.clear()
     search_cache_version += 1
 
@@ -573,6 +618,12 @@ def api_cache_invalidate():
 
 @app.post("/api/cache/warm")
 def api_cache_warm():
+    if not require_internal_token():
+        return jsonify({
+            "ok": False,
+            "error": "Unauthorized"
+        }), 401
+
     try:
         warmed = run_cache_warm()
 
@@ -596,6 +647,9 @@ def api_matches_search():
     global search_cache_version
 
     try:
+        client_ip = get_client_ip()
+        wait_for_rate_limit(client_ip)
+
         raw_search_request = request.get_json(silent=True) or {}
         search_request = normalize_search_request(raw_search_request)
 
@@ -656,7 +710,7 @@ def api_ping():
 # MAIN
 # =========================
 if __name__ == "__main__":
-    logging.warn("")
+    logging.warning("")
     logging.info("Starting API on %s:%s", api_host, api_port)
 
     try:

@@ -15,6 +15,7 @@ with open("keys.json") as json_file:
 
 cache_invalidate_url = config.get("cache_invalidate_url", "http://127.0.0.1:5001/api/cache/invalidate")
 cache_warm_url = config.get("cache_warm_url", "http://127.0.0.1:5001/api/cache/warm")
+internal_api_token = keys.get("internal_api_token")
 
 call_interval = config.get("call_interval", 1.2)
 api_key = keys["riot_api_key"]
@@ -85,6 +86,14 @@ root_logger.addHandler(file_handler)
 # =========================
 # HELPERS
 # =========================
+def build_internal_headers():
+    headers = {"Content-Type": "application/json"}
+
+    if internal_api_token:
+        headers["X-Internal-Token"] = internal_api_token
+
+    return headers
+
 def sleep_with_log(seconds: float, reason: str = "") -> None:
     if reason:
         logging.debug("Waiting %.2fs (%s)", seconds, reason)
@@ -98,7 +107,7 @@ def invalidate_cache():
         req = urllib.request.Request(
             cache_invalidate_url,
             data=b"{}",
-            headers={"Content-Type": "application/json"},
+            headers=build_internal_headers(),
             method="POST"
         )
 
@@ -115,7 +124,7 @@ def warm_cache():
         req = urllib.request.Request(
             cache_warm_url,
             data=b"{}",
-            headers={"Content-Type": "application/json"},
+            headers=build_internal_headers(),
             method="POST"
         )
 
