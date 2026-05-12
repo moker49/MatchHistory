@@ -6,7 +6,7 @@ export const state = {
     currentPage: 1,
     totalPages: 1,
     totalCount: 0,
-    pageSize: 100,
+    pageSize: 50,
     sort: {
         key: "DATE",
         direction: "desc"

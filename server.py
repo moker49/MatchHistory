@@ -38,6 +38,7 @@ with open("config.json", "r", encoding="utf-8") as json_file:
 with open("keys.json") as json_file:
     keys = json.load(json_file)
 
+PAGE_SIZE = 50
 players_proc = config["procedure_select_players"]
 columns_proc = config["procedure_select_columns"]
 options_proc = config["procedure_list_options"]
@@ -362,9 +363,9 @@ def parse_match_search_request(payload):
         page = 1
 
     try:
-        page_size = int(payload.get("page_size", 100))
+        page_size = int(payload.get("page_size", PAGE_SIZE))
     except (TypeError, ValueError):
-        page_size = 100
+        page_size = PAGE_SIZE
 
     if page < 1:
         page = 1
@@ -520,7 +521,7 @@ def run_cache_warm():
         "filter_mode": "all",
         "filters": [],
         "page": 1,
-        "page_size": 100,
+        "page_size": PAGE_SIZE,
         "sort_key": "DATE",
         "sort_direction": "desc"
     })

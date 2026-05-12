@@ -115,7 +115,7 @@ export async function loadColumnOptions() {
     }
 }
 
-export function buildSearchRequest({ page = 1, pageSize = 100 } = {}) {
+export function buildSearchRequest({ page = state.currentPage, pageSize = state.pageSize } = {}) {
     const sortKey = state.sort?.key || null;
     const sortDirection = state.sort?.direction === "asc" ? "asc" : "desc";
 
