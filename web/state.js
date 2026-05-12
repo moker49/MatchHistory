@@ -3,10 +3,19 @@ export const state = {
     players: [],
     selectedPlayers: new Set(),
     allColumns: [],
+
     currentPage: 1,
     totalPages: 1,
     totalCount: 0,
     pageSize: 50,
+    lastRows: [],
+    lastVisibleColumnKeys: [],
+    loadedMatchPages: new Set(),
+    highestLoadedMatchPage: 0,
+    highestRequestedMatchPage: 0,
+    isLoadingNextMatchPage: false,
+    hasMoreMatchPages: true,
+
     sort: {
         key: "DATE",
         direction: "desc"

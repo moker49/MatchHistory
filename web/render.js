@@ -690,9 +690,14 @@ function getColumnHeaderLabel(column) {
   return compactLabels[column.key] ?? column.label;
 }
 
-export function renderTable(rows, visibleColumnKeys) {
-  state.lastRows = rows;
+export function renderTable(rows, visibleColumnKeys, { append = false } = {}) {
+  state.lastRows = append
+    ? [...(state.lastRows || []), ...rows]
+    : rows;
+
   state.lastVisibleColumnKeys = visibleColumnKeys;
+
+  const rowsToRender = state.lastRows;
 
   const visibleColumns = state.allColumns.filter((col) =>
     visibleColumnKeys.includes(col.key) && col.key !== "MATCH_ID"
@@ -738,7 +743,7 @@ export function renderTable(rows, visibleColumnKeys) {
     });
   });
 
-  if (rows.length === 0) {
+  if (rowsToRender.length === 0) {
     dom.resultsBody.innerHTML = `
       <tr>
         <td colspan="${Math.max(visibleColumns.length, 1)}" class="empty-state">
@@ -749,10 +754,10 @@ export function renderTable(rows, visibleColumnKeys) {
     return;
   }
 
-  dom.resultsBody.innerHTML = rows.map((row, index) => {
+  dom.resultsBody.innerHTML = rowsToRender.map((row, index) => {
     const matchId = row.MATCH_ID;
-    const prevMatchId = rows[index - 1]?.MATCH_ID;
-    const nextMatchId = rows[index + 1]?.MATCH_ID;
+    const prevMatchId = rowsToRender[index - 1]?.MATCH_ID;
+    const nextMatchId = rowsToRender[index + 1]?.MATCH_ID;
 
     const isGrouped = matchId && (matchId === prevMatchId || matchId === nextMatchId);
     const isGroupStart = isGrouped && matchId !== prevMatchId;

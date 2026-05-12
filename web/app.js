@@ -59,7 +59,18 @@ function scheduleSortRefresh() {
   }, SORT_REFRESH_DEBOUNCE_MS);
 }
 
-async function applyFilters(page = 1) {
+function resetPagelessState() {
+    state.currentPage = 1;
+    state.totalPages = 1;
+    state.totalCount = 0;
+    state.loadedMatchPages.clear();
+    state.highestLoadedMatchPage = 0;
+    state.highestRequestedMatchPage = 0;
+    state.isLoadingNextMatchPage = false;
+    state.hasMoreMatchPages = true;
+}
+
+async function applyFilters(page = 1, { append = false } = {}) {
   const enabledColumns = getEnabledColumns();
   const requestedPage = Math.max(1, Number(page) || 1);
   const requestId = ++latestRequestId;
@@ -78,6 +89,16 @@ async function applyFilters(page = 1) {
       pageSize: state.pageSize
     });
 
+    if (append) {
+      state.isLoadingNextMatchPage = true;
+      state.highestRequestedMatchPage = Math.max(
+        state.highestRequestedMatchPage,
+        requestedPage
+      );
+    } else {
+      resetPagelessState();
+    }
+
     const result = await searchMatches(searchRequest);
 
     if (requestId !== latestRequestId) {
@@ -88,7 +109,18 @@ async function applyFilters(page = 1) {
     state.totalPages = Math.max(1, Number(result.total_pages) || 1);
     state.totalCount = Math.max(0, Number(result.total_count) || 0);
 
-    renderTable(result.rows || [], enabledColumns);
+    state.loadedMatchPages.add(state.currentPage);
+    state.highestLoadedMatchPage = Math.max(
+      state.highestLoadedMatchPage,
+      state.currentPage
+    );
+    state.highestRequestedMatchPage = Math.max(
+      state.highestRequestedMatchPage,
+      state.currentPage
+    );
+    state.hasMoreMatchPages = state.currentPage < state.totalPages;
+
+    renderTable(result.rows || [], enabledColumns, { append });
 
     const totalCount = result.total_count ?? 0;
     const formattedTotal = totalCount.toLocaleString();
@@ -103,11 +135,13 @@ async function applyFilters(page = 1) {
     console.error("Failed to load matches:", err);
     renderTable([], enabledColumns);
     dom.resultsSummary.textContent = "Failed to load matches";
-    state.currentPage = 1;
-    state.totalPages = 1;
-    state.totalCount = 0;
+    resetPagelessState();
     updatePaginationUi();
   } finally {
+    if (append) {
+      state.isLoadingNextMatchPage = false;
+    }
+
     if (requestId !== latestRequestId) {
       return;
     }
@@ -126,9 +160,7 @@ function resetControls() {
   state.selectedPlayers = new Set(
     state.players.map((player) => player.PUUID)
   );
-  state.currentPage = 1;
-  state.totalPages = 1;
-  state.totalCount = 0;
+  resetPagelessState();
   state.sort.key = "DATE";
   state.sort.direction = "desc";
 
@@ -268,7 +300,7 @@ async function init() {
   renderColumnControls();
 
   setSortChangedHandler(() => {
-    state.currentPage = 1;
+    resetPagelessState();
     scheduleSortRefresh();
   });
 
@@ -292,6 +324,22 @@ async function init() {
 }
 
 init();
+
+window.loadNextMatchPageForTest = function () {
+  const nextPage = state.highestLoadedMatchPage + 1;
+
+  if (!state.hasMoreMatchPages) {
+    console.log("No more match pages.");
+    return;
+  }
+
+  if (state.isLoadingNextMatchPage) {
+    console.log("Already loading the next match page.");
+    return;
+  }
+
+  return applyFilters(nextPage, { append: true });
+};
 
 function updateScrollbarWidth() {
   const el = document.querySelector(".controls-panel .settings-content");
