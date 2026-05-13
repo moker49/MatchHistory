@@ -114,6 +114,10 @@ p {
   padding: 20px;
 }
 
+.table-panel-header {
+  padding: 0 5px;
+}
+
 .controls-header {
   display: flex;
   align-items: center;
@@ -171,8 +175,8 @@ p {
 
 .table-description {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  justify-content: space-between;
+  width: 100%;
   color: var(--muted);
 }
 
@@ -918,16 +922,6 @@ input[type="number"] {
     box-shadow: none;
   }
 
-  .table-panel-header {
-    flex: 0 0 auto;
-
-    display: flex;
-    gap: 10px;
-    flex-direction: column-reverse;
-    align-items: stretch;
-    padding: 0 10px;
-  }
-
   .table-panel-scroll {
     flex: 1;
     min-height: 0;
@@ -948,19 +942,6 @@ input[type="number"] {
 
   .table-panel-scroll tbody td {
     border-bottom: 1px solid var(--border);
-  }
-
-  .table-description {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-  }
-
-  .table-description p:last-child {
-    text-align: right;
   }
 
   table {
