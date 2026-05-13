@@ -470,6 +470,7 @@ def search_matches(search_request):
     total_pages = 0
     if total_count > 0:
         total_pages = (total_count + search_request["page_size"] - 1) // search_request["page_size"]
+    has_more = search_request["page"] < total_pages
 
     logging.info(
         "Match search complete | returned_rows=%s | total_count=%s | total_pages=%s",
@@ -483,7 +484,8 @@ def search_matches(search_request):
         "total_count": total_count,
         "page": search_request["page"],
         "page_size": search_request["page_size"],
-        "total_pages": total_pages
+        "total_pages": total_pages,
+        "has_more": has_more
     }
 
 def wait_for_rate_limit(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECONDS):

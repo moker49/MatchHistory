@@ -229,38 +229,6 @@ p {
   gap: 16px;
 }
 
-.pagination-nav {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-left: auto;
-}
-
-.pagination-nav > *:not(.number-input) {
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
-.pagination-label,
-.pagination-total {
-  color: var(--muted);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.pagination-input {
-  width: 180px;
-  padding: 10px 12px;
-  background: var(--surface-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  font: inherit;
-  text-align: right;
-}
-
-.pagination-input:hover,
 .filter-input:hover,
 .filter-select:hover,
 .number-input:hover input {
@@ -268,35 +236,12 @@ p {
   background: var(--surface-3);
 }
 
-.pagination-input:focus,
 .filter-input:focus,
 .filter-select:focus,
 .number-input:focus-within input {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.12);
-}
-
-.pagination-go-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pagination-go-btn.loading {
-  color: transparent;
-  position: relative;
-}
-
-.pagination-go-btn.loading::after {
-  content: "";
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--muted);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
 }
 
 @keyframes spin {
@@ -1005,13 +950,6 @@ input[type="number"] {
     border-bottom: 1px solid var(--border);
   }
 
-  .pagination-nav {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
-    flex-wrap: nowrap;
-  }
-
   .table-description {
     display: flex;
     flex-direction: row;
@@ -1053,13 +991,8 @@ input[type="number"] {
     transition: none;
   }
 
-  .pagination-go-btn.loading::after,
   .filter-row,
   .column-card.enabled .add-filter-btn {
     animation: none;
   }
-}
-
-#paginationForm {
-  display: none;
 }

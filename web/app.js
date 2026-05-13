@@ -123,11 +123,6 @@ async function applyFilters(page = 1, { append = false } = {}) {
     dom.applyBtn.disabled = true;
     dom.applyBtn.textContent = "Loading...";
 
-    if (dom.pageGoBtn) {
-      dom.pageGoBtn.disabled = true;
-      dom.pageGoBtn.classList.add("loading");
-    }
-
     const searchRequest = buildSearchRequest({
       page: requestedPage,
       pageSize: state.pageSize
@@ -162,7 +157,10 @@ async function applyFilters(page = 1, { append = false } = {}) {
       state.highestRequestedMatchPage,
       state.currentPage
     );
-    state.hasMoreMatchPages = state.currentPage < state.totalPages;
+    state.hasMoreMatchPages =
+    typeof result.has_more === "boolean"
+      ? result.has_more
+      : state.currentPage < state.totalPages;
 
     const rows = (result.rows || []).map((row) => ({
       ...row,
