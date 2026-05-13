@@ -16,27 +16,14 @@ import {
   setSortChangedHandler
 } from "./render.js";
 
-function updatePaginationUi() {
-  if (dom.pageNumberInput) {
-    dom.pageNumberInput.value = String(state.currentPage);
-    dom.pageNumberInput.min = "1";
-    dom.pageNumberInput.max = String(Math.max(state.totalPages, 1));
+function updateResultsSummary() {
+  const totalMatches = Number(state.totalCount) || 0;
 
-    const min = Number(dom.pageNumberInput.min) || 1;
-    const max = Number(dom.pageNumberInput.max) || 1;
-    const current = Number(dom.pageNumberInput.value) || min;
-
-    dom.pageNumberInput.value = String(Math.min(Math.max(current, min), max));
-    dom.pageNumberInput.disabled = state.totalPages <= 1;
+  if (!dom.resultsSummary) {
+    return;
   }
 
-  if (dom.paginationTotal) {
-    dom.paginationTotal.textContent = `of ${Math.max(state.totalPages, 1)}`;
-  }
-
-  if (dom.pageGoBtn) {
-    dom.pageGoBtn.disabled = state.totalPages <= 1;
-  }
+  dom.resultsSummary.textContent = `${totalMatches.toLocaleString()} matches`;
 }
 
 let latestRequestId = 0;
@@ -155,7 +142,7 @@ async function applyFilters(page = 1, { append = false } = {}) {
     } else {
       resetPagelessState();
     }
-
+    
     const result = await searchMatches(searchRequest);
 
     if (requestId !== latestRequestId) {
@@ -182,13 +169,8 @@ async function applyFilters(page = 1, { append = false } = {}) {
       __matchPage: state.currentPage
     }));
 
+    updateResultsSummary();
     renderTable(rows, enabledColumns, { append });
-
-    const totalCount = result.total_count ?? 0;
-    const formattedTotal = totalCount.toLocaleString();
-    dom.resultsSummary.textContent = `${formattedTotal} records`;
-
-    updatePaginationUi();
   } catch (err) {
     if (requestId !== latestRequestId) {
       return;
@@ -198,7 +180,7 @@ async function applyFilters(page = 1, { append = false } = {}) {
     renderTable([], enabledColumns);
     dom.resultsSummary.textContent = "Failed to load matches";
     resetPagelessState();
-    updatePaginationUi();
+    updateResultsSummary();
   } finally {
     if (append) {
       state.isLoadingNextMatchPage = false;
@@ -210,11 +192,6 @@ async function applyFilters(page = 1, { append = false } = {}) {
 
     dom.applyBtn.disabled = false;
     dom.applyBtn.textContent = "Apply";
-
-    if (dom.pageGoBtn) {
-      dom.pageGoBtn.disabled = state.totalPages <= 1;
-      dom.pageGoBtn.classList.remove("loading");
-    }
   }
 }
 
@@ -257,7 +234,7 @@ function resetControls() {
     }
   });
 
-  updatePaginationUi();
+  updateResultsSummary();
   cancelScheduledSortRefresh();
   applyFilters(1);
 }
@@ -312,31 +289,8 @@ function initCollapsibleSettings() {
   }
 }
 
-function initPagination() {
-  updatePaginationUi();
-
-  if (!dom.paginationForm) {
-    return;
-  }
-
-  dom.paginationForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    const requestedPage = Number(dom.pageNumberInput?.value);
-    const safePage = Math.min(
-      Math.max(1, Number.isFinite(requestedPage) ? requestedPage : state.currentPage),
-      Math.max(state.totalPages, 1)
-    );
-
-    dom.pageNumberInput.value = String(safePage);
-    cancelScheduledSortRefresh();
-    applyFilters(safePage);
-  });
-}
-
 async function init() {
   initCollapsibleSettings();
-  initPagination();
   initPagelessScroll();
 
   dom.applyBtn.addEventListener("click", () => {

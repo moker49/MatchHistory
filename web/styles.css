@@ -1059,3 +1059,7 @@ input[type="number"] {
     animation: none;
   }
 }
+
+#paginationForm {
+  display: none;
+}
