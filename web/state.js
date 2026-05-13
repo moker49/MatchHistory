@@ -1,5 +1,4 @@
 export const state = {
-    CONFIG: {},
     players: [],
     selectedPlayers: new Set(),
     allColumns: [],

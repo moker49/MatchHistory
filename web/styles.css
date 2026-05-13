@@ -201,16 +201,6 @@ p {
   background: var(--surface-3);
 }
 
-.panel-collapse-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  font-size: 1.3rem;
-  line-height: 1;
-  color: var(--accent);
-}
-
 /* backdrop */
 .panel-backdrop {
   position: fixed;
@@ -246,12 +236,6 @@ p {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.12);
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .settings-grid {

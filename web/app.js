@@ -176,9 +176,9 @@ async function applyFilters(page = 1, { append = false } = {}) {
 
     console.error("Failed to load matches:", err);
     renderTable([], enabledColumns);
-    dom.resultsSummary.textContent = "Failed to load matches";
     resetPagelessState();
     updateResultsSummary();
+    dom.resultsSummary.textContent = "Failed to load";
   } finally {
     if (append) {
       state.isLoadingNextMatchPage = false;
@@ -264,14 +264,14 @@ function initCollapsibleSettings() {
   dom.mobileTableCompactBtn?.addEventListener('click', function () {
     const isCompact = document.body.classList.toggle("mobile-table-compact");
 
-    mobileTableCompactBtn.setAttribute("aria-pressed", isCompact ? "true" : "false");
-    mobileTableCompactBtn.setAttribute(
+    dom.mobileTableCompactBtn.setAttribute("aria-pressed", isCompact ? "true" : "false");
+    dom.mobileTableCompactBtn.setAttribute(
       "aria-label",
       isCompact ? "Disable compact table" : "Enable compact table"
     );
 
-    if (mobileTableCompactIcon) {
-      mobileTableCompactIcon.textContent = isCompact
+    if (dom.mobileTableCompactIcon) {
+      dom.mobileTableCompactIcon.textContent = isCompact
         ? "arrows_outward"
         : "horizontal_align_center";
     }
@@ -322,10 +322,6 @@ async function init() {
   const columnOptionsPromise = loadColumnOptions()
     .then(() => {
       renderColumnControls();
-    })
-    .catch((err) => {
-      console.error("Failed to load column options:", err);
-      showColumnLoadError();
     });
 
   const initialSearchPromise = applyFilters(1).catch((err) => {
@@ -339,22 +335,6 @@ async function init() {
 }
 
 init();
-
-window.loadNextMatchPageForTest = function () {
-  const nextPage = state.highestLoadedMatchPage + 1;
-
-  if (!state.hasMoreMatchPages) {
-    console.log("No more match pages.");
-    return;
-  }
-
-  if (state.isLoadingNextMatchPage) {
-    console.log("Already loading the next match page.");
-    return;
-  }
-
-  return applyFilters(nextPage, { append: true });
-};
 
 function updateScrollbarWidth() {
   const el = document.querySelector(".controls-panel .settings-content");
@@ -370,46 +350,14 @@ function updateScrollbarWidth() {
 }
 
 function afterInit() {
-  // update on resize
   window.addEventListener("resize", updateScrollbarWidth);
 
-  // update when filters panel content changes
   const observer = new ResizeObserver(updateScrollbarWidth);
   const settingsContent = document.querySelector(".controls-panel .settings-content");
+
   if (settingsContent) {
     observer.observe(settingsContent);
   }
-
-  // Enable custom number input buttons
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".number-btn");
-    if (!btn) return;
-
-    const wrapper = btn.closest(".number-input");
-    const input = wrapper?.querySelector("input[type='number']");
-    if (!input) return;
-
-    const step = Number(input.step) || 1;
-    const min = input.min !== "" ? Number(input.min) : null;
-    const max = input.max !== "" ? Number(input.max) : null;
-    const current = input.value === "" ? (min ?? 0) : Number(input.value);
-
-    let nextValue = btn.classList.contains("plus")
-      ? current + step
-      : current - step;
-
-    if (min !== null) {
-      nextValue = Math.max(min, nextValue);
-    }
-
-    if (max !== null) {
-      nextValue = Math.min(max, nextValue);
-    }
-
-    input.value = String(nextValue);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  });
 }
 
 afterInit();

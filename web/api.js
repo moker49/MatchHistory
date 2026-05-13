@@ -60,11 +60,8 @@ const HARDCODED_COLUMNS = [
 ];
 
 async function fetchJson(url) {
-    // console.log(`[${new Date().toISOString()}] fetch start`, url);
     const response = await fetch(url);
-    // console.log(`[${new Date().toISOString()}] response headers received`, url);
     const data = await response.json();
-    // console.log(`[${new Date().toISOString()}] response json parsed`, url);
 
     if (!response.ok || !data.ok) {
         throw new Error(data.error || `Request failed (${response.status})`);
@@ -73,8 +70,7 @@ async function fetchJson(url) {
     return data;
 }
 
-export function getApiBaseUrl() {
-    //return `http://${state.CONFIG.api_host}:${state.CONFIG.api_port}`;
+function getApiBaseUrl() {
     return "";
 }
 
