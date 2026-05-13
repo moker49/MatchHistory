@@ -770,7 +770,7 @@ export function renderTable(rows, visibleColumnKeys, { append = false } = {}) {
     ].filter(Boolean).join(" ");
 
     return `
-      <tr class="${groupClasses}">
+      <tr class="${groupClasses}" data-match-page="${escapeHtml(row.__matchPage ?? "")}">
         ${visibleColumns.map((col) => `<td>${formatCell(col, row[col.key])}</td>`).join("")}
       </tr>
     `;

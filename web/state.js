@@ -52,5 +52,6 @@ export const dom = {
     mobileTableCompactBtn: document.getElementById('mobileTableCompactBtn'),
     mobileTableCompactIcon: document.getElementById("mobileTableCompactIcon"),
     panelBackdrop: document.getElementById("panelBackdrop"),
-    layout: document.querySelector(".layout")
+    layout: document.querySelector(".layout"),
+    tableWrap: document.querySelector(".table-wrap")
 };

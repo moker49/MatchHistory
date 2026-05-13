@@ -43,6 +43,42 @@ let latestRequestId = 0;
 let sortRefreshTimer = null;
 const SORT_REFRESH_DEBOUNCE_MS = 300;
 
+function initPagelessScroll() {
+  function scrollListener(event) {
+    const lastLoadedPage = state.highestLoadedMatchPage;
+
+    if (lastLoadedPage < 1) {
+      return;
+    }
+
+    const lastPageRows = document.querySelectorAll(
+      `#resultsBody tr[data-match-page="${lastLoadedPage}"]`
+    );
+
+    if (lastPageRows.length === 0) {
+      return;
+    }
+
+    const firstRowOfLastPage = lastPageRows[0];
+    const rowRect = firstRowOfLastPage.getBoundingClientRect();
+
+    const scrollTarget = event?.currentTarget;
+    const containerBottom =
+      scrollTarget === dom.tableWrap
+        ? dom.tableWrap.getBoundingClientRect().bottom
+        : window.innerHeight;
+
+    const hasEnteredLastPage = rowRect.top < containerBottom;
+
+    if (hasEnteredLastPage) {
+      maybeLoadNextMatchPage();
+    }
+  }
+
+  window.addEventListener("scroll", scrollListener, { passive: true });
+  dom.tableWrap?.addEventListener("scroll", scrollListener, { passive: true });
+}
+
 function cancelScheduledSortRefresh() {
   if (sortRefreshTimer !== null) {
     window.clearTimeout(sortRefreshTimer);
@@ -68,6 +104,27 @@ function resetPagelessState() {
     state.highestRequestedMatchPage = 0;
     state.isLoadingNextMatchPage = false;
     state.hasMoreMatchPages = true;
+}
+
+function maybeLoadNextMatchPage() {
+  if (!state.hasMoreMatchPages) {
+    return;
+  }
+
+  if (state.isLoadingNextMatchPage) {
+    return;
+  }
+
+  if (state.highestLoadedMatchPage < 1) {
+    return;
+  }
+
+  if (state.highestRequestedMatchPage > state.highestLoadedMatchPage) {
+    return;
+  }
+
+  const nextPage = state.highestLoadedMatchPage + 1;
+  applyFilters(nextPage, { append: true });
 }
 
 async function applyFilters(page = 1, { append = false } = {}) {
@@ -120,7 +177,12 @@ async function applyFilters(page = 1, { append = false } = {}) {
     );
     state.hasMoreMatchPages = state.currentPage < state.totalPages;
 
-    renderTable(result.rows || [], enabledColumns, { append });
+    const rows = (result.rows || []).map((row) => ({
+      ...row,
+      __matchPage: state.currentPage
+    }));
+
+    renderTable(rows, enabledColumns, { append });
 
     const totalCount = result.total_count ?? 0;
     const formattedTotal = totalCount.toLocaleString();
@@ -275,6 +337,7 @@ function initPagination() {
 async function init() {
   initCollapsibleSettings();
   initPagination();
+  initPagelessScroll();
 
   dom.applyBtn.addEventListener("click", () => {
     cancelScheduledSortRefresh();
