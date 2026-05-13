@@ -335,29 +335,3 @@ async function init() {
 }
 
 init();
-
-function updateScrollbarWidth() {
-  const el = document.querySelector(".controls-panel .settings-content");
-  if (!el) return;
-
-  const hasScrollbar = el.scrollHeight > el.clientHeight;
-  const scrollbarWidth = el.offsetWidth - el.clientWidth;
-
-  el.style.setProperty(
-    "--scrollbar-width",
-    hasScrollbar ? `${scrollbarWidth}px` : "0px"
-  );
-}
-
-function afterInit() {
-  window.addEventListener("resize", updateScrollbarWidth);
-
-  const observer = new ResizeObserver(updateScrollbarWidth);
-  const settingsContent = document.querySelector(".controls-panel .settings-content");
-
-  if (settingsContent) {
-    observer.observe(settingsContent);
-  }
-}
-
-afterInit();
