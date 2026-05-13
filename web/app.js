@@ -62,7 +62,7 @@ function initPagelessScroll() {
     }
   }
 
-  window.addEventListener("scroll", scrollListener, { passive: true });
+  // window.addEventListener("scroll", scrollListener, { passive: true });
   dom.tableWrap?.addEventListener("scroll", scrollListener, { passive: true });
 }
 
