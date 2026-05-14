@@ -1,13 +1,23 @@
 import { state } from "./state.js";
 
 export function getOperatorOptions(type) {
-    if (type === "number" || type === "date") {
+    if (type === "number") {
         return [
             { value: "eq", label: "= equal to" },
             { value: "gt", label: "> greater than" },
             { value: "gte", label: "≥ greater/equal" },
             { value: "lt", label: "< less than" },
             { value: "lte", label: "≤ less/equal" }
+        ];
+    }
+
+    if (type === "date") {
+        return [
+            { value: "eq", label: "is" },
+            { value: "gt", label: "after" },
+            { value: "gte", label: "is or after" },
+            { value: "lt", label: "before" },
+            { value: "lte", label: "is or before" }
         ];
     }
 
