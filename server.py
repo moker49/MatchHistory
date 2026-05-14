@@ -131,6 +131,13 @@ DEFAULT_SEARCH_PLAYERS = [
 # =========================
 # HELPERS
 # =========================
+def parse_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "y")
+    return bool(value)
+
 def get_connection():
     return odbc.connect(conn_string)
 
@@ -185,8 +192,13 @@ def normalize_search_request(search_request):
     search_request = search_request or {}
 
     players = search_request.get("players")
+    include_other_players = parse_bool(search_request.get("include_other_players", False))
+
     if not players:
-        players = DEFAULT_SEARCH_PLAYERS
+        if include_other_players:
+            players = []
+        else:
+            players = DEFAULT_SEARCH_PLAYERS
     players = [str(player).strip() for player in players if str(player).strip()]
     players = sorted(set(players))
 
@@ -214,6 +226,7 @@ def normalize_search_request(search_request):
 
     return {
         "players": players,
+        "include_other_players": include_other_players,
         "visible_columns": visible_columns,
         "filters": search_request.get("filters", []),
         "page": search_request.get("page", 1),
@@ -428,10 +441,11 @@ def row_to_dict(columns, row):
 
 def search_matches(search_request):
     logging.info(
-        "Searching matches | page=%s | page_size=%s | players=%s | visible_columns=%s | filters=%s | filter_mode=%s | sort=%s %s",
+        "Searching matches | page=%s | page_size=%s | players=%s | include_other_players=%s | visible_columns=%s | filters=%s | filter_mode=%s | sort=%s %s",
         search_request["page"],
         search_request["page_size"],
         len(search_request["players"]),
+        search_request.get("include_other_players"),
         len(search_request["visible_columns"]),
         len(search_request["filters"]),
         search_request["filter_mode"],
@@ -519,6 +533,7 @@ def run_cache_warm():
     # default search
     default_search_request = normalize_search_request({
         "players": DEFAULT_SEARCH_PLAYERS,
+        "include_other_players": False,
         "visible_columns": DEFAULT_VISIBLE_COLUMNS,
         "filter_mode": "all",
         "filters": [],

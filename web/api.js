@@ -1,6 +1,8 @@
 import { state, defaultSelectedColumnKeys } from "./state.js";
 import {
     getSelectedPlayers,
+    getIncludeOtherPlayers,
+    OTHER_PLAYER_KEY,
     getGlobalFilterMode,
     getEnabledColumns,
     getActiveFilters
@@ -15,6 +17,8 @@ const HARDCODED_PLAYERS = [
     { PUUID: "R5Tqz9GSjFlgM0nXyjzN0ETtPYecY8X1v5lnYnko8kDykUPmvg0OABUQOeROzEofmlrIQXuxNWggow", PLAYER: "Kevin" },
     { PUUID: "wlgaFlDfW1y9v4LKFs1dvV8KPAR4RMhDDwRKjFJ_eoX74dQF5jUjrrOpsZlbhNCRVWlvjt0IMzPAYg", PLAYER: "Kleber" }
 ];
+
+const OTHER_PLAYER_OPTION = { PUUID: OTHER_PLAYER_KEY, PLAYER: "Randoms" };
 
 const HARDCODED_COLUMNS = [
     { key: "MATCH_ID", label: "Match ID", type: "text" },
@@ -75,10 +79,12 @@ function getApiBaseUrl() {
 }
 
 export async function loadPlayers() {
-    state.players = HARDCODED_PLAYERS;
+    state.players = [...HARDCODED_PLAYERS, OTHER_PLAYER_OPTION];
 
     state.selectedPlayers = new Set(
-        state.players.map((player) => player.PUUID)
+        state.players
+            .map((player) => player.PUUID)
+            .filter((puuid) => puuid !== OTHER_PLAYER_KEY)
     );
 }
 
@@ -117,6 +123,7 @@ export function buildSearchRequest({ page = state.currentPage, pageSize = state.
 
     return {
         players: getSelectedPlayers(),
+        include_other_players: getIncludeOtherPlayers(),
         visible_columns: getEnabledColumns(),
         filter_mode: getGlobalFilterMode(),
         filters: getActiveFilters(),

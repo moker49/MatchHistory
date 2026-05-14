@@ -195,7 +195,9 @@ async function applyFilters(page = 1, { append = false } = {}) {
 
 function resetControls() {
   state.selectedPlayers = new Set(
-    state.players.map((player) => player.PUUID)
+    state.players
+      .map((player) => player.PUUID)
+      .filter((puuid) => puuid !== OTHER_PLAYER_KEY)
   );
   resetPagelessState();
   state.sort.key = "DATE";

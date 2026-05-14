@@ -25,9 +25,11 @@
   --text-inverse: #06231f;
 
   /* accents */
-  --accent: #4fd1c5;
-  --accent-2: #2dd4bf;
-  --accent-soft: rgba(79, 209, 197, 0.12);
+  --accent: hsl(174, 59%, 56%);
+  --accent-b: #2dd4bf;
+  --accent-2: hsl(150, 59%, 56%);
+  --accent-soft: hsla(174, 59%, 56%, 0.12);
+  --accent-2-soft: hsla(150, 59%, 56%, 0.12);
 
   /* status */
   --danger: #f87171;
@@ -317,7 +319,7 @@ input::-webkit-calendar-picker-indicator {
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: linear-gradient(135deg, var(--accent), var(--accent-b));
   color: var(--text-inverse);
   border: none;
   flex: 3;
@@ -562,6 +564,10 @@ input::-webkit-calendar-picker-indicator {
     background var(--motion-fast) ease,
     border-color var(--motion-fast) ease,
     filter var(--motion-fast) ease;
+}
+
+.player-option-other {
+  border-style: dashed;
 }
 
 .player-option:hover {

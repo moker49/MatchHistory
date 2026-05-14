@@ -1,5 +1,7 @@
 import { state } from "./state.js";
 
+export const OTHER_PLAYER_KEY = "__OTHER__";
+
 export function getOperatorOptions(type) {
     if (type === "number") {
         return [
@@ -35,7 +37,12 @@ export function getOperatorOptions(type) {
 }
 
 export function getSelectedPlayers() {
-    return Array.from(state.selectedPlayers);
+    return Array.from(state.selectedPlayers)
+        .filter((playerKey) => playerKey !== OTHER_PLAYER_KEY);
+}
+
+export function getIncludeOtherPlayers() {
+    return state.selectedPlayers.has(OTHER_PLAYER_KEY);
 }
 
 export function getGlobalFilterMode() {

@@ -1,5 +1,5 @@
 import { state, dom } from "./state.js";
-import { getOperatorOptions } from "./filters.js";
+import { getOperatorOptions, OTHER_PLAYER_KEY } from "./filters.js";
 
 let sortChangedHandler = null;
 export function setSortChangedHandler(handler) {
@@ -313,11 +313,12 @@ export function renderPlayerOptions() {
     const playerName = playerObj.PLAYER;
     const puuid = playerObj.PUUID;
     const isSelected = state.selectedPlayers.has(puuid);
+    const isOtherPlayer = puuid === OTHER_PLAYER_KEY;
 
     return `
       <button
         type="button"
-        class="player-option ${isSelected ? "selected" : ""}"
+        class="player-option ${isSelected ? "selected" : ""} ${isOtherPlayer ? "player-option-other" : ""}"
         data-player="${escapeHtml(playerName)}"
         data-puuid="${escapeHtml(puuid)}"
       >
