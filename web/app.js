@@ -93,6 +93,17 @@ function resetPagelessState() {
     state.hasMoreMatchPages = true;
 }
 
+function resetResultsScrollPosition() {
+  if (dom.tableWrap) {
+    dom.tableWrap.scrollTop = 0;
+  }
+
+  window.scrollTo({
+    top: 0,
+    behavior: "auto"
+  });
+}
+
 function maybeLoadNextMatchPage() {
   if (!state.hasMoreMatchPages) {
     return;
@@ -135,6 +146,7 @@ async function applyFilters(page = 1, { append = false } = {}) {
         requestedPage
       );
     } else {
+      resetResultsScrollPosition();
       resetPagelessState();
     }
     
