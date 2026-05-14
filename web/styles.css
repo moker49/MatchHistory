@@ -74,7 +74,7 @@ body {
 }
 
 .app-shell {
-  width: min(1500px, 80%);
+  width: min(1500px, 85%);
   height: calc(100vh - 64px);
   margin: 24px auto 40px;
 
@@ -124,6 +124,7 @@ p {
 .table-panel {
   width: 100%;
   padding: 20px;
+  gap: 14px;
 
   height: 100%;
   display: flex;
@@ -151,14 +152,14 @@ p {
   position: fixed;
   top: 0;
   left: 0;
-  bottom: -50vh;
+  bottom: 0;
   z-index: 30;
   display: flex;
   flex-direction: column;
   width: min(480px, 100vw);
   overflow: hidden;
-  padding: 20px 0 0 20px;
-  padding-bottom: calc(50vh + 10px);
+  padding: 20px;
+  padding-right: 0;
   transition:
     transform var(--motion-slow) ease,
     opacity var(--motion-fast) ease;
@@ -170,7 +171,6 @@ p {
 .controls-panel .settings-content {
   flex: 1;
   overflow: auto;
-  padding-right: 2px;
   scrollbar-color: var(--border) var(--panel);
 }
 
@@ -180,10 +180,6 @@ p {
 
 .controls-panel.collapsed .settings-content {
   display: none;
-}
-
-.settings-content {
-  margin-bottom: 20px;
 }
 
 .settings-content > * {
@@ -377,14 +373,30 @@ input::-webkit-calendar-picker-indicator {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   font-weight: 700;
   cursor: pointer;
 }
 
 .toggle input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-label {
+  min-width: 0;
+  color: var(--muted);
+}
+
+.column-card.enabled .toggle-label {
+  color: var(--text);
+}
+
+.column-card.enabled .column-toggle-check {
+  background-color: rgba(79, 209, 197, 0.08);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .column-type {
@@ -579,6 +591,9 @@ input::-webkit-calendar-picker-indicator {
 .player-option-check {
   width: 22px;
   height: 22px;
+  min-width: 22px;
+  flex: 0 0 22px;
+
   display: grid;
   place-items: center;
   color: transparent;
@@ -606,7 +621,6 @@ input::-webkit-calendar-picker-indicator {
 }
 
 .table-wrap {
-  margin-top: 16px;
   overflow: auto;
   background: var(--surface-1);
   border: 1px solid var(--border);
@@ -922,7 +936,7 @@ input[type="number"] {
   }
 
   .table-panel {
-    padding: 20px 10px;
+    padding: 10px;
 
     border-radius: 0;
     border-left: 0;
@@ -942,6 +956,14 @@ input[type="number"] {
   body.mobile-table-compact table td {
     padding-left: 6px;
     padding-right: 6px;
+  }
+
+  body.mobile-table-compact .table-panel {
+    padding: 10px 0;
+  }
+
+  body.mobile-table-compact .table-panel-header {
+    padding: 0 15px;
   }
 
 }

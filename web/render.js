@@ -358,7 +358,8 @@ export function renderColumnControls() {
       <div class="column-top">
         <label class="toggle">
           <input type="checkbox" class="column-toggle" ${column.default ? "checked" : ""} />
-          <span>${escapeHtml(column.label)}</span>
+          <span class="player-option-check column-toggle-check">✓</span>
+          <span class="toggle-label">${escapeHtml(column.label)}</span>
         </label>
         <span class="column-type">${escapeHtml(column.type)}</span>
       </div>
