@@ -16,6 +16,24 @@ import {
   setSortChangedHandler
 } from "./render.js";
 
+const MOBILE_FILTER_PANEL_QUERY = "(max-width: 768px)";
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+function isMobileLayout() {
+  return window.matchMedia(MOBILE_FILTER_PANEL_QUERY).matches;
+}
+
+function setPanelOpen(isOpen) {
+  dom.controlsPanel.classList.toggle("collapsed", !isOpen);
+  dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
+  dom.settingsToggleIcon.textContent = isOpen ? "close" : "filter_list";
+
+  if (dom.panelBackdrop) {
+    dom.panelBackdrop.classList.toggle("visible", isOpen);
+  }
+}
+
 function updateResultsSummary() {
   const totalMatches = Number(state.totalCount) || 0;
 
@@ -130,9 +148,16 @@ async function applyFilters(page = 1, { append = false } = {}) {
   const requestedPage = Math.max(1, Number(page) || 1);
   const requestId = ++latestRequestId;
 
+ 
   try {
     dom.applyBtn.disabled = true;
     dom.applyBtn.textContent = "Loading...";
+
+    if (!append && isMobileLayout()) {
+      await delay(75);
+      setPanelOpen(false);
+      await new Promise(requestAnimationFrame);
+    }
 
     const searchRequest = buildSearchRequest({
       page: requestedPage,
@@ -252,16 +277,6 @@ function resetControls() {
 }
 
 function initCollapsibleSettings() {
-  function setPanelOpen(isOpen) {
-    dom.controlsPanel.classList.toggle("collapsed", !isOpen);
-    dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
-    dom.settingsToggleIcon.textContent = isOpen ? "close" : "filter_list";
-
-    if (dom.panelBackdrop) {
-      dom.panelBackdrop.classList.toggle("visible", isOpen);
-    }
-  }
-
   dom.settingsToggle.addEventListener("click", () => {
     const isCurrentlyCollapsed = dom.controlsPanel.classList.contains("collapsed");
     setPanelOpen(isCurrentlyCollapsed);
