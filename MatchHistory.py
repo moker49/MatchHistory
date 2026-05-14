@@ -21,7 +21,7 @@ call_interval = config.get("call_interval", 1.2)
 api_key = keys["riot_api_key"]
 region = config["region"]
 match_count = 100
-epoch_stop = 50
+epoch_stop = config.get("epoch_stop", 50)
 
 dry_run = config.get("dry_run", 0)
 dry_run_player = config.get("dry_run_player", 'erik')
