@@ -347,7 +347,7 @@ export function renderColumnControls() {
   dom.columnsContainer.innerHTML = "";
 
   state.allColumns.forEach((column) => {
-    if ("MATCH_ID" === column.key) return;
+    // if ("MATCH_ID" === column.key) return;
     const card = document.createElement("div");
     const supportsColumnFilters = supportsFilters(column);
 
@@ -678,16 +678,7 @@ function getColumnHeaderLabel(column) {
   if (!document.body.classList.contains("mobile-table-compact")) {
     return column.label;
   }
-
-  const compactLabels = {
-    GAME_MODE: "MODE",
-    CHAMPION: "CHAMP",
-    KILLS: "K",
-    DEATHS: "D",
-    ASSISTS: "A"
-  };
-
-  return compactLabels[column.key] ?? column.label;
+  return column.compact ?? column.label;
 }
 
 export function renderTable(rows, visibleColumnKeys, { append = false } = {}) {
@@ -700,7 +691,7 @@ export function renderTable(rows, visibleColumnKeys, { append = false } = {}) {
   const rowsToRender = state.lastRows;
 
   const visibleColumns = state.allColumns.filter((col) =>
-    visibleColumnKeys.includes(col.key) && col.key !== "MATCH_ID"
+    visibleColumnKeys.includes(col.key)// && col.key !== "MATCH_ID"
   );
 
   dom.resultsHead.innerHTML = `

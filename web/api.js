@@ -21,46 +21,55 @@ const HARDCODED_PLAYERS = [
 const OTHER_PLAYER_OPTION = { PUUID: OTHER_PLAYER_KEY, PLAYER: "Randoms" };
 
 const HARDCODED_COLUMNS = [
-    { key: "MATCH_ID", label: "Match ID", type: "text" },
+    { key: "MATCH_ID", label: "Match ID", type: "text", compact: "Match" },
     { key: "PLAYER", label: "Player", type: "select" },
-    { key: "GAME_MODE", label: "Game Mode", type: "select" },
-    { key: "CHAMPION", label: "Champion", type: "select" },
+    { key: "GAME_MODE", label: "Game Mode", type: "select", compact: "Mode" },
+    { key: "CHAMPION", label: "Champion", type: "select", compact: "Champ" },
     { key: "DATE", label: "Date", type: "date" },
-    { key: "DURATION", label: "Duration", type: "number" },
-    { key: "RESULT", label: "Result", type: "select" },
-    { key: "KILLS", label: "Kills", type: "number" },
-    { key: "DEATHS", label: "Deaths", type: "number" },
-    { key: "ASSISTS", label: "Assists", type: "number" },
-    { key: "DOUBLE_KILLS", label: "Double Kills", type: "number" },
-    { key: "TRIPLE_KILLS", label: "Triple Kills", type: "number" },
-    { key: "QUADRA_KILLS", label: "Quadra Kills", type: "number" },
-    { key: "PENTA_KILLS", label: "Penta Kills", type: "number" },
-    { key: "LEGENDARY_KILLS", label: "Legendary Kills", type: "number" },
-    { key: "DMG_TO_CHAMPS", label: "Damage To Champs", type: "number" },
-    { key: "DMG_TO_STRUCT", label: "Damage To Structures", type: "number" },
-    { key: "DMG_TAKEN", label: "Damage Taken", type: "number" },
-    { key: "DMG_MITIGATED", label: "Damage Mitigated", type: "number" },
+    { key: "DURATION", label: "Duration", type: "number", compact: "Dur" },
+    { key: "RESULT", label: "Result", type: "select", compact: "W/L" },
+
+    { key: "KILLS", label: "Kills", type: "number", compact: "K" },
+    { key: "DEATHS", label: "Deaths", type: "number", compact: "D" },
+    { key: "ASSISTS", label: "Assists", type: "number", compact: "A" },
+
+    { key: "DOUBLE_KILLS", label: "Double Kills", type: "number", compact: "2x" },
+    { key: "TRIPLE_KILLS", label: "Triple Kills", type: "number", compact: "3x" },
+    { key: "QUADRA_KILLS", label: "Quadra Kills", type: "number", compact: "4x" },
+    { key: "PENTA_KILLS", label: "Penta Kills", type: "number", compact: "5x" },
+    { key: "LEGENDARY_KILLS", label: "Legendary Kills", type: "number", compact: "6x" },
+
+    { key: "DMG_TO_CHAMPS", label: "Damage To Champs", type: "number", compact: "ChampDmg" },
+    { key: "DMG_TO_STRUCT", label: "Damage To Structures", type: "number", compact: "StructDmg" },
+    { key: "DMG_TAKEN", label: "Damage Taken", type: "number", compact: "DmgTaken" },
+    { key: "DMG_MITIGATED", label: "Damage Mitigated", type: "number", compact: "DmgMit" },
+
     { key: "GOLD", label: "Gold", type: "number" },
-    { key: "CREEP_SCORE", label: "Creep Score", type: "number" },
-    { key: "DRAGONS", label: "Dragons", type: "number" },
-    { key: "BARONS", label: "Barons", type: "number" },
-    { key: "LEVEL", label: "Level", type: "number" },
-    { key: "FIRST_BLOOD", label: "First Blood", type: "select" },
-    { key: "FIRST_TOWER", label: "First Tower", type: "select" },
-    { key: "SURRENDER", label: "Surrender", type: "select" },
-    { key: "TIME_CC_OTHER", label: "Time CC Other", type: "number" },
-    { key: "TIME_DEAD", label: "Time Dead", type: "number" },
-    { key: "CRIT", label: "Largest Crit", type: "number" },
-    { key: "SPELL_1_CAST", label: "Spell 1 Casts", type: "number" },
-    { key: "SPELL_2_CAST", label: "Spell 2 Casts", type: "number" },
-    { key: "SPELL_3_CAST", label: "Spell 3 Casts", type: "number" },
-    { key: "SPELL_4_CAST", label: "Spell 4 Casts", type: "number" },
-    { key: "SUMM_1_CAST", label: "Summoner 1 Casts", type: "number" },
-    { key: "SUMM_2_CAST", label: "Summoner 2 Casts", type: "number" },
-    { key: "SUMM_1_ID", label: "Summoner 1 ID", type: "number" },
-    { key: "SUMM_2_ID", label: "Summoner 2 ID", type: "number" },
-    { key: "WARDS_PLACED", label: "Wards Placed", type: "number" },
-    { key: "WARDS_KILLED", label: "Wards Killed", type: "number" }
+    { key: "CREEP_SCORE", label: "Creep Score", type: "number", compact: "CS" },
+    { key: "DRAGONS", label: "Dragons", type: "number", compact: "Drag" },
+    { key: "BARONS", label: "Barons", type: "number", compact: "Baron" },
+    { key: "LEVEL", label: "Level", type: "number", compact: "Lvl" },
+
+    { key: "FIRST_BLOOD", label: "First Blood", type: "select", compact: "FB" },
+    { key: "FIRST_TOWER", label: "First Tower", type: "select", compact: "FT" },
+    { key: "SURRENDER", label: "Surrender", type: "select", compact: "Surr" },
+
+    { key: "TIME_CC_OTHER", label: "Time CC Other", type: "number", compact: "CC" },
+    { key: "TIME_DEAD", label: "Time Dead", type: "number", compact: "Dead" },
+    { key: "CRIT", label: "Largest Crit", type: "number", compact: "Crit" },
+
+    { key: "SPELL_1_CAST", label: "Spell 1 Casts", type: "number", compact: "Q" },
+    { key: "SPELL_2_CAST", label: "Spell 2 Casts", type: "number", compact: "W" },
+    { key: "SPELL_3_CAST", label: "Spell 3 Casts", type: "number", compact: "E" },
+    { key: "SPELL_4_CAST", label: "Spell 4 Casts", type: "number", compact: "R" },
+
+    { key: "SUMM_1_CAST", label: "Summoner 1 Casts", type: "number", compact: "Sum1" },
+    { key: "SUMM_2_CAST", label: "Summoner 2 Casts", type: "number", compact: "Sum2" },
+    { key: "SUMM_1_ID", label: "Summoner 1 ID", type: "number", compact: "Sum1ID" },
+    { key: "SUMM_2_ID", label: "Summoner 2 ID", type: "number", compact: "Sum2ID" },
+
+    { key: "WARDS_PLACED", label: "Wards Placed", type: "number", compact: "Wards+" },
+    { key: "WARDS_KILLED", label: "Wards Killed", type: "number", compact: "Wards-" }
 ];
 
 async function fetchJson(url) {
