@@ -552,19 +552,17 @@ function getSelectLabel(column, value) {
 export function formatCell(column, value) {
   const key = column.key;
 
+  const shortGameModes = {
+    "Classic": "5v5",
+    "Nexus Blitz": "N.Blitz",
+    "One for All": "OFA",
+    "Swiftplay": "Swift"
+  }
+
   if (isMobileTableCompact()) {
     if (key === "GAME_MODE") {
       const gameModeLabel = getSelectLabel(column, value);
-
-      if (gameModeLabel === "Swiftplay") {
-        return "Swift";
-      }
-
-      if (gameModeLabel === "Classic") {
-        return "5v5";
-      }
-
-      return escapeHtml(gameModeLabel);
+      return escapeHtml(shortGameModes[gameModeLabel] ?? gameModeLabel);
     }
 
     if (key === "CHAMPION") {
