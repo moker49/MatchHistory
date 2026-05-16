@@ -6,7 +6,9 @@ import {
   searchMatches,
   buildSearchRequest
 } from "./api.js";
-import { getEnabledColumns } from "./filters.js";
+import {
+  getEnabledColumns,
+  OTHER_PLAYER_KEY} from "./filters.js";
 import {
   renderPlayerOptions,
   renderColumnControls,
