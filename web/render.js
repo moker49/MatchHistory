@@ -495,7 +495,8 @@ function formatDateCell(value) {
 }
 
 function isMobileTableCompact() {
-  return document.body.classList.contains("mobile-table-compact");
+  return window.matchMedia("(max-width: 768px)").matches
+    && !document.body.classList.contains("mobile-table-comfortable");
 }
 
 function cutChampionName(value) {
@@ -675,10 +676,7 @@ function toggleSort(column) {
 }
 
 function getColumnHeaderLabel(column) {
-  if (!document.body.classList.contains("mobile-table-compact")) {
-    return column.label;
-  }
-  return column.compact ?? column.label;
+  return isMobileTableCompact() ? (column.compact ?? column.label) : column.label
 }
 
 export function renderTable(rows, visibleColumnKeys, { append = false } = {}) {

@@ -292,8 +292,9 @@ function initCollapsibleSettings() {
     setPanelOpen(true);
   });
 
-  dom.mobileTableCompactBtn?.addEventListener('click', function () {
-    const isCompact = document.body.classList.toggle("mobile-table-compact");
+  function toggleTableCompact() {
+    const isComfortable = document.body.classList.toggle("mobile-table-comfortable");
+    const isCompact = !isComfortable;
 
     dom.mobileTableCompactBtn.setAttribute("aria-pressed", isCompact ? "true" : "false");
     dom.mobileTableCompactBtn.setAttribute(
@@ -307,8 +308,10 @@ function initCollapsibleSettings() {
         : "horizontal_align_center";
     }
 
-    renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []);
-  });
+    renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []); 
+  }
+
+  dom.mobileTableCompactBtn?.addEventListener("click", toggleTableCompact);
 
   const startsOpen = !dom.controlsPanel.classList.contains("collapsed");
   setPanelOpen(startsOpen);
@@ -321,6 +324,10 @@ function initCollapsibleSettings() {
 async function init() {
   initCollapsibleSettings();
   initPagelessScroll();
+
+  window.matchMedia("(max-width: 768px)").addEventListener("change", () => {
+    renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []);
+  });
 
   dom.applyBtn.addEventListener("click", () => {
     cancelScheduledSortRefresh();

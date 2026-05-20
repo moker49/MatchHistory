@@ -958,18 +958,26 @@ input[type="number"] {
     min-width: auto;
   }
 
-  body.mobile-table-compact table th,
-  body.mobile-table-compact table td {
+  table th,
+  table td {
     padding-left: 6px;
     padding-right: 6px;
   }
 
-  body.mobile-table-compact .table-panel {
+  .table-panel {
     padding: 10px 0;
   }
 
-  body.mobile-table-compact .table-panel-header {
+  .table-panel-header {
     padding: 0 15px;
+  }
+
+  body.mobile-table-comfortable .table-panel {
+    padding: 10px;
+  }
+
+  body.mobile-table-comfortable .table-panel-header {
+    padding: 0 5px;
   }
 
 }
