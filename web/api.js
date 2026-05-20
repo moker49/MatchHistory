@@ -15,7 +15,8 @@ const HARDCODED_PLAYERS = [
     { PUUID: "LBn849uoRjZ5UyYJrucUy-YkoJszDfRBlquhfGhz0ftp3jqagl6QBlSNvwES383H1XkZ8JllwmaPoQ", PLAYER: "Karina" },
     { PUUID: "eLii3p9m_AC6OdjtTUUyXU2y0X3zp-I4kyc-QXNu7vBX0IPbANvRx4SZ1M8Aa1Ni48SSoI0-6oZRbw", PLAYER: "Kayla" },
     { PUUID: "R5Tqz9GSjFlgM0nXyjzN0ETtPYecY8X1v5lnYnko8kDykUPmvg0OABUQOeROzEofmlrIQXuxNWggow", PLAYER: "Kevin" },
-    { PUUID: "wlgaFlDfW1y9v4LKFs1dvV8KPAR4RMhDDwRKjFJ_eoX74dQF5jUjrrOpsZlbhNCRVWlvjt0IMzPAYg", PLAYER: "Kleber" }
+    { PUUID: "wlgaFlDfW1y9v4LKFs1dvV8KPAR4RMhDDwRKjFJ_eoX74dQF5jUjrrOpsZlbhNCRVWlvjt0IMzPAYg", PLAYER: "Kleber" },
+    { PUUID: "uk17B74sho6C2HjZyvJKUoB5mJYjgfxsguKjDHZZRrjt7ia77Jvy3jzFwVLbVNG_33pgSNMrvHFoyQ", PLAYER: "Russel" }
 ];
 
 const OTHER_PLAYER_OPTION = { PUUID: OTHER_PLAYER_KEY, PLAYER: "Randoms" };
