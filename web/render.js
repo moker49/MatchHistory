@@ -16,7 +16,8 @@ function escapeHtml(value) {
 }
 
 function supportsFilters(column) {
-  return column.key !== "PLAYER";
+  const noFilterColumns = ["PLAYER", "KDA"];
+  return !noFilterColumns.includes(column?.key);
 }
 
 function animateCardHeight(card, mutate, duration = 180) {

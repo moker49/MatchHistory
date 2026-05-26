@@ -113,6 +113,7 @@ DEFAULT_VISIBLE_COLUMNS = [
     "CHAMPION",
     "DATE",
     "RESULT",
+    "KDA",
     "KILLS",
     "DEATHS",
     "ASSISTS"

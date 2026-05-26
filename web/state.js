@@ -27,6 +27,7 @@ export const defaultSelectedColumnKeys = new Set([
     "CHAMPION",
     "DATE",
     "RESULT",
+    "KDA",
     "KILLS",
     "DEATHS",
     "ASSISTS"

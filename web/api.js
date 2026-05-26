@@ -30,6 +30,7 @@ const HARDCODED_COLUMNS = [
     { key: "DURATION", label: "Duration", type: "number", compact: "Dur" },
     { key: "RESULT", label: "Result", type: "select", compact: "W/L" },
 
+    { key: "KDA", label: "KDA", type: "text" },
     { key: "KILLS", label: "Kills", type: "number", compact: "K" },
     { key: "DEATHS", label: "Deaths", type: "number", compact: "D" },
     { key: "ASSISTS", label: "Assists", type: "number", compact: "A" },
