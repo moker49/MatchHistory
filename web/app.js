@@ -13,6 +13,7 @@ import {
   renderPlayerOptions,
   renderColumnControls,
   renderTable,
+  renderFilterChips,
   showPlayerLoadError,
   showColumnLoadError,
   setSortChangedHandler
@@ -206,6 +207,10 @@ async function applyFilters(page = 1, { append = false } = {}) {
       __matchPage: state.currentPage
     }));
 
+    if (!append) {
+      renderFilterChips(searchRequest.filters);
+    }
+
     updateResultsSummary();
     renderTable(rows, enabledColumns, { append });
   } catch (err) {
@@ -273,6 +278,7 @@ function resetControls() {
     }
   });
 
+  renderFilterChips([]);
   updateResultsSummary();
   cancelScheduledSortRefresh();
   applyFilters(1);

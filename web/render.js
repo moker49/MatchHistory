@@ -293,6 +293,124 @@ function createFilterRow(column, filtersWrap, checkbox, columnFilterMode, operat
   });
 }
 
+
+function getFilterOperatorLabel(type, operator) {
+  if (type === "number") {
+    return {
+      eq: "=",
+      gt: ">",
+      gte: "≥",
+      lt: "<",
+      lte: "≤"
+    }[operator] ?? operator;
+  }
+
+  if (type === "date") {
+    return {
+      eq: "is",
+      gt: "after",
+      gte: "on/after",
+      lt: "before",
+      lte: "on/before"
+    }[operator] ?? operator;
+  }
+
+  if (type === "select" || type === "boolean") {
+    return {
+      equals: "is",
+      not: "is not"
+    }[operator] ?? operator;
+  }
+
+  return {
+    contains: "contains",
+    equals: "equals"
+  }[operator] ?? operator;
+}
+
+function getFilterValueLabel(column, value) {
+  if (column.key === "RESULT") {
+    if (value === "True") return "Win";
+    if (value === "False") return "Loss";
+  }
+
+  if (column.type === "select" && Array.isArray(column.options) && column.options.length > 0) {
+    return getSelectLabel(column, value);
+  }
+
+  return value;
+}
+
+function formatFilterSummary(column, filter) {
+  const operatorLabel = getFilterOperatorLabel(filter.type, filter.operator);
+  const valueLabel = getFilterValueLabel(column, filter.value);
+
+  return [operatorLabel, valueLabel]
+    .filter((part) => String(part ?? "").trim() !== "")
+    .join(" ");
+}
+
+export function renderFilterChips(appliedFilters = []) {
+  let chipHtml = appliedFilters
+    .filter((filterGroup) => Array.isArray(filterGroup.filters) && filterGroup.filters.length > 0)
+    .map((filterGroup) => {
+      const column = state.allColumns.find((col) => col.key === filterGroup.key);
+      if (!column) {
+        return "";
+      }
+
+      const filterSummaries = filterGroup.filters
+        .map((filter) => formatFilterSummary(column, filter))
+        .filter(Boolean);
+
+      if (filterSummaries.length === 0) {
+        return "";
+      }
+
+      const filterText = filterSummaries.length > 1
+        ? ""
+        : filterSummaries[0];
+
+      return `
+        <div class="table-chip">
+          <span class="table-chip-label">${escapeHtml(column.label)}</span>
+          ${filterText ? `<span class="table-chip-value">${escapeHtml(filterText)}</span>` : ""}
+        </div>
+      `;
+    })
+    .filter(Boolean)
+    .join("");
+
+  let chipHeader = document.getElementById("tableChipsHeader");
+
+  if (!chipHtml) {
+    chipHeader?.remove();
+    dom.tableChips = null;
+    return;
+  }
+
+  if (!chipHeader) {
+    chipHeader = document.createElement("div");
+    chipHeader.id = "tableChipsHeader";
+    chipHeader.className = "table-panel-header panel-header";
+
+    const chips = document.createElement("div");
+    chips.id = "tableChips";
+    chips.className = "table-chips";
+    chips.setAttribute("aria-label", "Applied filters");
+
+    chipHeader.appendChild(chips);
+
+    const tablePanel = document.querySelector(".table-panel");
+    tablePanel?.insertBefore(chipHeader, tablePanel.firstElementChild);
+
+    dom.tableChips = chips;
+  }
+
+  dom.tableChips = document.getElementById("tableChips");
+  dom.tableChips.innerHTML = chipHtml;
+}
+
 export function showPlayerLoadError() {
   dom.playerOptions.innerHTML = `
     <div class="empty-state">

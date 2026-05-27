@@ -126,7 +126,7 @@ p {
 .table-panel {
   width: 100%;
   padding: 20px;
-  gap: 14px;
+  gap: 10px;
 
   height: 100%;
   display: flex;
@@ -136,6 +136,10 @@ p {
 
 .table-panel-header {
   padding: 0 5px;
+}
+
+.table-panel-footer {
+  padding: 0 10px;
 }
 
 .controls-header {
@@ -186,6 +190,38 @@ p {
 
 .settings-content > * {
   padding-right: calc(20px - var(--scrollbar-width, 0px));
+}
+
+.table-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.table-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid rgba(79, 209, 197, 0.32);
+  border-radius: 999px;
+  background: rgba(79, 209, 197, 0.10);
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.table-chip-label {
+  color: var(--muted);
+}
+
+.table-chip-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table-description {
@@ -942,7 +978,7 @@ input[type="number"] {
   }
 
   .table-panel {
-    padding: 10px;
+    padding: 0 0 10px 0;
 
     border-radius: 0;
     border-left: 0;
@@ -964,20 +1000,16 @@ input[type="number"] {
     padding-right: 6px;
   }
 
-  .table-panel {
-    padding: 10px 0;
-  }
-
   .table-panel-header {
-    padding: 0 15px;
+    padding: 10px 15px 0 15px
   }
 
   body.mobile-table-comfortable .table-panel {
-    padding: 10px;
+    padding: 0 10px 10px 10px;
   }
 
   body.mobile-table-comfortable .table-panel-header {
-    padding: 0 5px;
+    padding: 10px 5px 0 5px
   }
 
 }
@@ -1001,5 +1033,22 @@ input[type="number"] {
   .filter-row,
   .column-card.enabled .add-filter-btn {
     animation: none;
+  }
+}
+@media (max-width: 768px) {
+  .table-chips.has-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .table-chips.has-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .table-chip {
+    flex: 0 0 auto;
+    max-width: 78vw;
   }
 }
