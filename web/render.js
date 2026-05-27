@@ -144,7 +144,6 @@ function buildValueControlHtml(column, inputValue = "") {
   if (column.type === "boolean") {
     return `
       <select class="filter-input">
-        <option value="">select...</option>
         <option value="True" ${inputValue === "True" ? "selected" : ""}>True</option>
         <option value="False" ${inputValue === "False" ? "selected" : ""}>False</option>
       </select>
@@ -154,7 +153,6 @@ function buildValueControlHtml(column, inputValue = "") {
   if (column.type === "select" && Array.isArray(column.options) && column.options.length > 0) {
     return `
       <select class="filter-input">
-        <option value="">select...</option>
         ${column.options.map((option) => {
       const value = typeof option === "string" ? option : option.value;
       const label = typeof option === "string" ? option : (option.label ?? option.value);
