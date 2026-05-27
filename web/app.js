@@ -14,6 +14,7 @@ import {
   renderColumnControls,
   renderTable,
   renderFilterChips,
+  renderRecentSearches,
   showPlayerLoadError,
   showColumnLoadError,
   setSortChangedHandler
@@ -50,6 +51,71 @@ function updateResultsSummary() {
 let latestRequestId = 0;
 let sortRefreshTimer = null;
 const SORT_REFRESH_DEBOUNCE_MS = 300;
+const RECENT_SEARCHES_STORAGE_KEY = "matchHistory.recentSearches";
+const MAX_RECENT_SEARCHES = 3;
+
+
+function cloneSearchRequest(searchRequest) {
+  return JSON.parse(JSON.stringify(searchRequest));
+}
+
+function getRecentSearchRequestKey(searchRequest) {
+  const searchKey = cloneSearchRequest(searchRequest);
+  delete searchKey.page;
+  delete searchKey.pageSize;
+  delete searchKey.page_size;
+
+  return JSON.stringify(searchKey);
+}
+
+function loadRecentSearches() {
+  try {
+    const storedSearches = JSON.parse(
+      localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY) || "[]"
+    );
+
+    state.recentSearches = Array.isArray(storedSearches)
+      ? storedSearches.slice(0, MAX_RECENT_SEARCHES)
+      : [];
+  } catch (err) {
+    console.warn("Failed to load recent searches:", err);
+    state.recentSearches = [];
+  }
+
+  renderRecentSearches();
+}
+
+function saveRecentSearches() {
+  try {
+    localStorage.setItem(
+      RECENT_SEARCHES_STORAGE_KEY,
+      JSON.stringify(state.recentSearches)
+    );
+  } catch (err) {
+    console.warn("Failed to save recent searches:", err);
+  }
+}
+
+function rememberRecentSearch(searchRequest) {
+  const storedRequest = cloneSearchRequest(searchRequest);
+  delete storedRequest.page;
+  delete storedRequest.pageSize;
+  delete storedRequest.page_size;
+
+  const searchKey = getRecentSearchRequestKey(storedRequest);
+
+  state.recentSearches = [
+    {
+      key: searchKey,
+      request: storedRequest,
+      savedAt: new Date().toISOString()
+    },
+    ...state.recentSearches.filter((search) => search.key !== searchKey)
+  ].slice(0, MAX_RECENT_SEARCHES);
+
+  saveRecentSearches();
+  renderRecentSearches();
+}
 
 function initPagelessScroll() {
   function scrollListener(event) {
@@ -146,7 +212,7 @@ function maybeLoadNextMatchPage() {
   applyFilters(nextPage, { append: true });
 }
 
-async function applyFilters(page = 1, { append = false } = {}) {
+async function applyFilters(page = 1, { append = false, remember = true } = {}) {
   const enabledColumns = getEnabledColumns();
   const requestedPage = Math.max(1, Number(page) || 1);
   const requestId = ++latestRequestId;
@@ -208,7 +274,11 @@ async function applyFilters(page = 1, { append = false } = {}) {
     }));
 
     if (!append) {
-      renderFilterChips(searchRequest.filters);
+      renderFilterChips(searchRequest);
+
+      if (remember) {
+        rememberRecentSearch(searchRequest);
+      }
     }
 
     updateResultsSummary();
@@ -278,10 +348,10 @@ function resetControls() {
     }
   });
 
-  renderFilterChips([]);
+  renderFilterChips({});
   updateResultsSummary();
   cancelScheduledSortRefresh();
-  applyFilters(1);
+  applyFilters(1, { remember: false });
 }
 
 function initCollapsibleSettings() {
@@ -328,6 +398,7 @@ function initCollapsibleSettings() {
 }
 
 async function init() {
+  loadRecentSearches();
   initCollapsibleSettings();
   initPagelessScroll();
 
@@ -357,6 +428,7 @@ async function init() {
 
   renderPlayerOptions();
   renderColumnControls();
+  renderRecentSearches();
 
   setSortChangedHandler(() => {
     resetPagelessState();
@@ -366,9 +438,10 @@ async function init() {
   const columnOptionsPromise = loadColumnOptions()
     .then(() => {
       renderColumnControls();
+      renderRecentSearches();
     });
 
-  const initialSearchPromise = applyFilters(1).catch((err) => {
+  const initialSearchPromise = applyFilters(1, { remember: false }).catch((err) => {
     console.error("Failed to load initial matches:", err);
   });
 

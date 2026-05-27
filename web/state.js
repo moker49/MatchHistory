@@ -14,6 +14,7 @@ export const state = {
     highestRequestedMatchPage: 0,
     isLoadingNextMatchPage: false,
     hasMoreMatchPages: true,
+    recentSearches: [],
 
     sort: {
         key: "DATE",
@@ -49,5 +50,6 @@ export const dom = {
     mobileTableCompactIcon: document.getElementById("mobileTableCompactIcon"),
     panelBackdrop: document.getElementById("panelBackdrop"),
     layout: document.querySelector(".layout"),
-    tableWrap: document.querySelector(".table-wrap")
+    tableWrap: document.querySelector(".table-wrap"),
+    recentSearches: document.querySelector(".recent-search")
 };

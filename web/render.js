@@ -348,13 +348,13 @@ function formatFilterSummary(column, filter) {
     .join(" ");
 }
 
-export function renderFilterChips(appliedFilters = []) {
-  let chipHtml = appliedFilters
+function getFilterChipItems(searchRequest = {}) {
+  return (searchRequest.filters || [])
     .filter((filterGroup) => Array.isArray(filterGroup.filters) && filterGroup.filters.length > 0)
     .map((filterGroup) => {
       const column = state.allColumns.find((col) => col.key === filterGroup.key);
       if (!column) {
-        return "";
+        return null;
       }
 
       const filterSummaries = filterGroup.filters
@@ -362,23 +362,101 @@ export function renderFilterChips(appliedFilters = []) {
         .filter(Boolean);
 
       if (filterSummaries.length === 0) {
-        return "";
+        return null;
       }
 
-      const filterText = filterSummaries.length > 1
-        ? ""
-        : filterSummaries[0];
-
-      return `
-        <div class="table-chip">
-          <span class="table-chip-label">${escapeHtml(column.label)}</span>
-          ${filterText ? `<span class="table-chip-value">${escapeHtml(filterText)}</span>` : ""}
-        </div>
-      `;
+      return {
+        label: column.label,
+        value: filterSummaries.length > 1
+          ? `${filterSummaries.length} filters`
+          : filterSummaries[0]
+      };
     })
-    .filter(Boolean)
-    .join("");
+    .filter(Boolean);
+}
 
+function getPlayerChipItem(searchRequest = {}) {
+  const selectedPuuids = Array.isArray(searchRequest.players)
+    ? searchRequest.players
+    : [];
+
+  if (selectedPuuids.length === 0 || state.players.length === 0) {
+    return null;
+  }
+
+  const defaultPlayerPuuids = state.players
+    .map((player) => player.PUUID)
+    .filter((puuid) => puuid !== OTHER_PLAYER_KEY);
+
+  const selectedDefaultCount = selectedPuuids
+    .filter((puuid) => defaultPlayerPuuids.includes(puuid))
+    .length;
+
+  const selectedOther = selectedPuuids.includes(OTHER_PLAYER_KEY);
+  const isDefaultSelection =
+    selectedDefaultCount === defaultPlayerPuuids.length && !selectedOther;
+
+  if (isDefaultSelection) {
+    return null;
+  }
+
+  const playerNames = selectedPuuids
+    .map((puuid) => state.players.find((player) => player.PUUID === puuid)?.PLAYER)
+    .filter(Boolean);
+
+  if (playerNames.length === 0) {
+    return null;
+  }
+
+  return {
+    label: "Players",
+    value: playerNames.length <= 2
+      ? playerNames.join(", ")
+      : `${playerNames[0]} + ${playerNames.length - 1}`
+  };
+}
+
+function getSortChipItem(searchRequest = {}) {
+  const sortKey = searchRequest.sort_key ?? searchRequest.sort?.key;
+  const sortDirection = searchRequest.sort_direction ?? searchRequest.sort?.direction;
+
+  if (!sortKey || !sortDirection) {
+    return null;
+  }
+
+  if (sortKey === "DATE" && sortDirection === "desc") {
+    return null;
+  }
+
+  const column = state.allColumns.find((col) => col.key === sortKey);
+  const columnLabel = column?.label ?? sortKey;
+  const directionLabel = sortDirection === "asc" ? "↑" : "↓";
+
+  return {
+    label: "Sort",
+    value: `${columnLabel} ${directionLabel}`
+  };
+}
+
+function getSearchChipItems(searchRequest = {}) {
+  return [
+    getPlayerChipItem(searchRequest),
+    ...getFilterChipItems(searchRequest),
+    getSortChipItem(searchRequest)
+  ].filter(Boolean);
+}
+
+function renderSearchChipItems(chipItems = [], className = "search-chip") {
+  return chipItems.map((chip) => `
+    <div class="${className}">
+      ${chip.label ? `<span class="${className}-label">${escapeHtml(chip.label)}</span>` : ""}
+      ${chip.value ? `<span class="${className}-value">${escapeHtml(chip.value)}</span>` : ""}
+    </div>
+  `).join("");
+}
+
+export function renderFilterChips(searchRequest = {}) {
+  const chipHtml = renderSearchChipItems(getSearchChipItems(searchRequest), "table-chip");
   let chipHeader = document.getElementById("tableChipsHeader");
 
   if (!chipHtml) {
@@ -395,7 +473,7 @@ export function renderFilterChips(appliedFilters = []) {
     const chips = document.createElement("div");
     chips.id = "tableChips";
     chips.className = "table-chips";
-    chips.setAttribute("aria-label", "Applied filters");
+    chips.setAttribute("aria-label", "Applied search");
 
     chipHeader.appendChild(chips);
 
@@ -407,6 +485,45 @@ export function renderFilterChips(appliedFilters = []) {
 
   dom.tableChips = document.getElementById("tableChips");
   dom.tableChips.innerHTML = chipHtml;
+}
+
+export function renderRecentSearches(recentSearches = state.recentSearches) {
+  if (!dom.recentSearches) {
+    return;
+  }
+
+  if (!Array.isArray(recentSearches) || recentSearches.length === 0) {
+    dom.recentSearches.innerHTML = `
+      <div class="recent-search-header">
+        <span>Recent searches</span>
+      </div>
+      <p class="recent-search-empty">Your latest searches will appear here.</p>
+    `;
+    return;
+  }
+
+  dom.recentSearches.innerHTML = `
+    <div class="recent-search-header">
+      <span>Recent searches</span>
+    </div>
+    <div class="recent-search-list">
+      ${recentSearches.map((recentSearch, index) => {
+        const chipHtml = renderSearchChipItems(
+          getSearchChipItems(recentSearch.request || recentSearch),
+          "search-chip"
+        ) || `<div class="search-chip"><span class="search-chip-value">Default search</span></div>`;
+
+        return `
+          <div class="recent-search-item">
+            <div class="recent-search-index">${index + 1}</div>
+            <div class="search-chips" aria-label="Recent search ${index + 1}">
+              ${chipHtml}
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
 }
 
 export function showPlayerLoadError() {

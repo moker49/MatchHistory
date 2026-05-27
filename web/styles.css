@@ -323,6 +323,83 @@ input::-webkit-calendar-picker-indicator {
   border-radius: 16px;
 }
 
+.recent-search-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recent-search-empty {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.recent-search-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recent-search-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.recent-search-index {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  margin-top: 2px;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.search-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid rgba(79, 209, 197, 0.26);
+  border-radius: 999px;
+  background: rgba(79, 209, 197, 0.08);
+  color: var(--text);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.search-chip-label {
+  color: var(--muted);
+}
+
+.search-chip-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
 .actions {
   display: flex;
   gap: 12px;
