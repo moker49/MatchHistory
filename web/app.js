@@ -26,10 +26,11 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 function isMobileLayout() {
   return window.matchMedia(MOBILE_FILTER_PANEL_QUERY).matches;
-}
+} 
 
 function setPanelOpen(isOpen) {
   dom.controlsPanel.classList.toggle("collapsed", !isOpen);
+  dom.historyBar.classList.toggle("hidden", isOpen);
   dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
   dom.settingsToggleIcon.textContent = isOpen ? "close" : "filter_list";
 

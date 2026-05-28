@@ -514,12 +514,11 @@ export function renderRecentSearches(recentSearches = state.recentSearches) {
         ) || `<div class="search-chip"><span class="search-chip-value">Default search</span></div>`;
 
         return `
-          <div class="recent-search-item">
-            <div class="recent-search-index">${index + 1}</div>
+          <button class="recent-search-btn">
             <div class="search-chips" aria-label="Recent search ${index + 1}">
               ${chipHtml}
             </div>
-          </div>
+          </button>
         `;
       }).join("")}
     </div>

@@ -45,6 +45,7 @@ export const dom = {
     settingsToggle: document.getElementById("settingsToggle"),
     settingsToggleIcon: document.getElementById("settingsToggleIcon"),
     controlsPanel: document.getElementById("controlsPanel"),
+    historyBar: document.getElementById("historyBar"),
     mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
     mobileTableCompactBtn: document.getElementById('mobileTableCompactBtn'),
     mobileTableCompactIcon: document.getElementById("mobileTableCompactIcon"),
