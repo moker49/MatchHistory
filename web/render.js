@@ -339,15 +339,6 @@ function getFilterValueLabel(column, value) {
   return value;
 }
 
-function formatFilterSummary(column, filter) {
-  const operatorLabel = getFilterOperatorLabel(filter.type, filter.operator);
-  const valueLabel = getFilterValueLabel(column, filter.value);
-
-  return [operatorLabel, valueLabel]
-    .filter((part) => String(part ?? "").trim() !== "")
-    .join(" ");
-}
-
 function getFilterChipItems(searchRequest = {}) {
   return (searchRequest.filters || [])
     .filter((filterGroup) => Array.isArray(filterGroup.filters) && filterGroup.filters.length > 0)
@@ -357,19 +348,31 @@ function getFilterChipItems(searchRequest = {}) {
         return null;
       }
 
-      const filterSummaries = filterGroup.filters
-        .map((filter) => formatFilterSummary(column, filter))
-        .filter(Boolean);
+      const filterCount = filterGroup.filters.length;
+      const filter = filterGroup.filters[0];
 
-      if (filterSummaries.length === 0) {
+      const operatorLabel = getFilterOperatorLabel(filter.type, filter.operator);
+      const valueLabel = getFilterValueLabel(column, filter.value);
+
+      if (filterCount > 1) {
+        return {
+          label: column.label,
+          operator: "",
+          value: `${filterCount} filters`
+        };
+      }
+
+      if (
+        String(operatorLabel ?? "").length === 0 ||
+        String(valueLabel ?? "").length === 0
+      ) {
         return null;
       }
 
       return {
         label: column.label,
-        value: filterSummaries.length > 1
-          ? `${filterSummaries.length} filters`
-          : filterSummaries[0]
+        operator: operatorLabel,
+        value: valueLabel
       };
     })
     .filter(Boolean);
@@ -412,7 +415,7 @@ function getPlayerChipItem(searchRequest = {}) {
     label: "Players",
     value: playerNames.length <= 2
       ? playerNames.join(", ")
-      : `${playerNames[0]} + ${playerNames.length - 1}`
+      : `${playerNames[0]} +${playerNames.length - 1}`
   };
 }
 
@@ -434,7 +437,8 @@ function getSortChipItem(searchRequest = {}) {
 
   return {
     label: "Sort",
-    value: `${columnLabel} ${directionLabel}`
+    value: columnLabel,
+    direction : directionLabel
   };
 }
 
@@ -446,17 +450,19 @@ function getSearchChipItems(searchRequest = {}) {
   ].filter(Boolean);
 }
 
-function renderSearchChipItems(chipItems = [], className = "search-chip") {
+function renderSearchChipItems(chipItems = [], className = "filter-chip") {
   return chipItems.map((chip) => `
     <div class="${className}">
       ${chip.label ? `<span class="${className}-label">${escapeHtml(chip.label)}</span>` : ""}
+      ${chip.operator ? `<span class="${className}-operator">${escapeHtml(chip.operator)}</span>` : ""}
       ${chip.value ? `<span class="${className}-value">${escapeHtml(chip.value)}</span>` : ""}
+      ${chip.direction ? `<span class="${className}-operator">${escapeHtml(chip.direction)}</span>` : ""}
     </div>
   `).join("");
 }
 
 export function renderFilterChips(searchRequest = {}) {
-  const chipHtml = renderSearchChipItems(getSearchChipItems(searchRequest), "table-chip");
+  const chipHtml = renderSearchChipItems(getSearchChipItems(searchRequest), "filter-chip");
   let chipHeader = document.getElementById("tableChipsHeader");
 
   if (!chipHtml) {
@@ -504,8 +510,8 @@ export function renderRecentSearches(recentSearches = state.recentSearches) {
       ${recentSearches.map((recentSearch, index) => {
         const chipHtml = renderSearchChipItems(
           getSearchChipItems(recentSearch.request || recentSearch),
-          "search-chip"
-        ) || `<div class="search-chip"><span class="search-chip-value">Default search</span></div>`;
+          "filter-chip"
+        ) || `<div class="filter-chip"><span class="filter-chip-value">Default search</span></div>`;
 
         return `
           <button class="recent-search-btn" type="button" data-recent-search-index="${index}">

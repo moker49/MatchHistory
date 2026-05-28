@@ -78,7 +78,7 @@ let latestRequestId = 0;
 let sortRefreshTimer = null;
 const SORT_REFRESH_DEBOUNCE_MS = 300;
 const RECENT_SEARCHES_STORAGE_KEY = "matchHistory.recentSearches";
-const MAX_RECENT_SEARCHES = 3;
+const MAX_RECENT_SEARCHES = 5;
 
 
 function cloneSearchRequest(searchRequest) {
@@ -378,7 +378,7 @@ function resetControls() {
       .map((player) => player.PUUID)
       .filter((puuid) => puuid !== OTHER_PLAYER_KEY)
   );
-  resetPagelessState();
+  // resetPagelessState();
   state.sort.key = "DATE";
   state.sort.direction = "desc";
 
@@ -413,11 +413,11 @@ function resetControls() {
     }
   });
 
-  state.activeSearchRequest = null;
+  // state.activeSearchRequest = null;
   renderFilterChips({});
-  updateResultsSummary();
+  // updateResultsSummary();
   cancelScheduledSortRefresh();
-  applyFilters(1, { remember: false });
+  // applyFilters(1, { remember: false });
 }
 
 function initCollapsibleSettings() {

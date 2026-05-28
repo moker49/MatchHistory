@@ -26,7 +26,7 @@
 
   /* accents */
   --accent: hsl(174, 59%, 56%);
-  --accent-b: #2dd4bf;
+  --accent-b: hsl(172, 66%, 50%);
   --accent-2: hsl(150, 59%, 56%);
   --accent-soft: hsla(174, 59%, 56%, 0.12);
   --accent-2-soft: hsla(150, 59%, 56%, 0.12);
@@ -41,6 +41,10 @@
   --badge-loss-bg: rgba(248, 113, 113, 0.16);
   --badge-redo-bg: rgba(251, 191, 36, 0.16);
   --badge-unknown-bg: rgba(159, 176, 207, 0.16);
+
+  /* chips */
+  --chip-border: rgba(79, 209, 197, 0.32);
+  --chip-bg: rgba(79, 209, 197, 0.10);
 
   /* misc */
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
@@ -200,26 +204,30 @@ p {
   min-width: 0;
 }
 
-.table-chip {
+.filter-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   max-width: 100%;
   padding: 6px 10px;
-  border: 1px solid rgba(79, 209, 197, 0.32);
+  border: 1px solid var(--chip-border);
   border-radius: 999px;
-  background: rgba(79, 209, 197, 0.10);
+  background: var(--chip-bg);
   color: var(--text);
   font-size: 0.82rem;
   line-height: 1.2;
   white-space: nowrap;
 }
 
-.table-chip-label {
+.filter-chip-label {
   color: var(--muted);
 }
 
-.table-chip-value {
+.filter-chip-operator {
+  color: var(--warning);
+}
+
+.filter-chip-value {
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1044,7 +1052,7 @@ input[type="number"] {
     display: none;
   }
 
-  .table-chip {
+  .filter-chip {
     flex: 0 0 auto;
     max-width: 78vw;
   }
@@ -1203,33 +1211,6 @@ input[type="number"] {
   min-width: 0;
 }
 
-.search-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-  padding: 6px 10px;
-  border: 1px solid rgba(79, 209, 197, 0.24);
-  border-radius: 999px;
-  background: rgba(79, 209, 197, 0.08);
-  color: var(--text);
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.search-chip-label {
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.search-chip-value {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 @media (max-width: 768px) {
   .recent-search-popup {
     align-items: end;
@@ -1265,10 +1246,6 @@ input[type="number"] {
     display: none;
   }
 
-  .search-chip {
-    flex: 0 0 auto;
-    max-width: 78vw;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
