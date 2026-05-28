@@ -80,6 +80,11 @@ body {
   overflow: hidden;
 }
 
+label {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Layout */
 .app-shell {
   width: min(1500px, 85%);
@@ -953,6 +958,7 @@ input[type="number"] {
   display: grid;
   place-items: center;
   padding: 20px;
+  pointer-events: none;
 }
 
 .recent-search-popup-card {
@@ -960,6 +966,7 @@ input[type="number"] {
   max-height: min(680px, calc(100dvh - 40px));
   overflow: hidden;
   padding: 0;
+  pointer-events: auto;
   background: var(--panel);
   border: 1px solid rgba(79, 209, 197, 0.18);
   border-radius: 22px;
@@ -1127,6 +1134,10 @@ input[type="number"] {
     justify-content: flex-start;
   }
 
+  #historyBar {
+    display: none;
+  }
+
   .controls-panel.collapsed {
     transform: translateX(-100%);
   }
@@ -1155,11 +1166,7 @@ input[type="number"] {
   }
 
   .table-panel-header {
-    padding: 10px 15px 0 15px;
-  }
-
-  body.mobile-table-comfortable .table-panel-header {
-    padding: 10px 5px 0 5px;
+    padding: 10px 10px 0 10px;
   }
 
   /* Applied chips */

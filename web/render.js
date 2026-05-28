@@ -493,6 +493,99 @@ export function renderFilterChips(searchRequest = {}) {
   dom.tableChips.innerHTML = chipHtml;
 }
 
+
+function getSearchRequestColumnKeys(searchRequest = {}) {
+  const columnKeys = searchRequest.columns
+    ?? searchRequest.visible_columns
+    ?? searchRequest.visibleColumns
+    ?? searchRequest.column_keys
+    ?? searchRequest.columnKeys;
+
+  return Array.isArray(columnKeys) ? columnKeys.map(String) : null;
+}
+
+export function applySearchRequestToControls(searchRequest = {}) {
+  if (Array.isArray(searchRequest.players)) {
+    state.selectedPlayers = new Set(searchRequest.players);
+    renderPlayerOptions();
+  }
+
+  const sortKey = searchRequest.sort_key ?? searchRequest.sort?.key;
+  const sortDirection = searchRequest.sort_direction ?? searchRequest.sort?.direction;
+
+  state.sort.key = sortKey || "DATE";
+  state.sort.direction = sortDirection || "desc";
+
+  const visibleColumnKeys = getSearchRequestColumnKeys(searchRequest);
+  const filterGroups = Array.isArray(searchRequest.filters)
+    ? searchRequest.filters
+    : [];
+
+  document.querySelectorAll(".column-card").forEach((card) => {
+    const key = card.dataset.key;
+    const column = state.allColumns.find((col) => col.key === key);
+    if (!column) {
+      return;
+    }
+
+    const checkbox = card.querySelector(".column-toggle");
+    const filtersWrap = card.querySelector(".filters-wrap");
+    const columnFilterMode = card.querySelector(".column-filter-mode");
+    const defaultMode = card.querySelector(`input[name="columnMode-${key}"][value="all"]`);
+    const requestedFilterGroup = filterGroups.find((filterGroup) => filterGroup.key === key);
+    const requestedFilters = Array.isArray(requestedFilterGroup?.filters)
+      ? requestedFilterGroup.filters
+      : [];
+    const isEnabled = visibleColumnKeys
+      ? visibleColumnKeys.includes(key)
+      : !!column.default;
+
+    if (checkbox) {
+      checkbox.checked = isEnabled;
+    }
+
+    card.classList.toggle("enabled", isEnabled);
+
+    if (filtersWrap) {
+      filtersWrap.innerHTML = "";
+    }
+
+    if (defaultMode) {
+      defaultMode.checked = true;
+    }
+
+    if (requestedFilterGroup?.mode) {
+      const requestedMode = card.querySelector(
+        `input[name="columnMode-${key}"][value="${requestedFilterGroup.mode}"]`
+      );
+
+      if (requestedMode) {
+        requestedMode.checked = true;
+      }
+    }
+
+    if (supportsFilters(column) && filtersWrap && checkbox && columnFilterMode) {
+      requestedFilters.forEach((filter) => {
+        createFilterRow(
+          column,
+          filtersWrap,
+          checkbox,
+          columnFilterMode,
+          filter.operator,
+          filter.value
+        );
+      });
+    }
+
+    updateColumnFilterModeVisibility({
+      checkbox,
+      filtersWrap,
+      columnFilterMode,
+      supportsColumnFilters: supportsFilters(column)
+    });
+  });
+}
+
 export function renderRecentSearches(recentSearches = state.recentSearches) {
   if (!dom.recentSearches) {
     return;

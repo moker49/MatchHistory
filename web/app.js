@@ -15,6 +15,7 @@ import {
   renderTable,
   renderFilterChips,
   renderRecentSearches,
+  applySearchRequestToControls,
   showPlayerLoadError,
   showColumnLoadError,
   setSortChangedHandler
@@ -217,6 +218,7 @@ function applyRecentSearch(index) {
     remember: true,
     searchRequestOverride: searchRequest
   });
+  applySearchRequestToControls(searchRequest);
 }
 
 function initPagelessScroll() {
