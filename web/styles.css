@@ -953,7 +953,6 @@ input[type="number"] {
   display: grid;
   place-items: center;
   padding: 20px;
-  pointer-events: none;
 }
 
 .recent-search-popup-card {
@@ -1157,10 +1156,6 @@ input[type="number"] {
 
   .table-panel-header {
     padding: 10px 15px 0 15px;
-  }
-
-  body.mobile-table-comfortable .table-panel {
-    padding: 0 10px 10px 10px;
   }
 
   body.mobile-table-comfortable .table-panel-header {
