@@ -256,13 +256,13 @@ p {
   background: var(--surface-3);
 }
 
-/* backdrop */
 .panel-backdrop {
   position: fixed;
   inset: 0;
   z-index: 25;
   background: rgba(3, 8, 18, 0.42);
   opacity: 0;
+  border: 0;
   pointer-events: none;
   transition: opacity var(--motion-fast) ease;
 }
