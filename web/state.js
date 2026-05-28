@@ -15,6 +15,7 @@ export const state = {
     isLoadingNextMatchPage: false,
     hasMoreMatchPages: true,
     recentSearches: [],
+    activeSearchRequest: null,
 
     sort: {
         key: "DATE",
@@ -46,11 +47,15 @@ export const dom = {
     settingsToggleIcon: document.getElementById("settingsToggleIcon"),
     controlsPanel: document.getElementById("controlsPanel"),
     historyBar: document.getElementById("historyBar"),
+    historyBtn: document.getElementById("historyBtn"),
     mobileFiltersBtn: document.getElementById("mobileFiltersBtn"),
+    mobileHistoryBtn: document.getElementById("mobileHistoryBtn"),
     mobileTableCompactBtn: document.getElementById('mobileTableCompactBtn'),
     mobileTableCompactIcon: document.getElementById("mobileTableCompactIcon"),
     panelBackdrop: document.getElementById("panelBackdrop"),
     layout: document.querySelector(".layout"),
     tableWrap: document.querySelector(".table-wrap"),
+    recentSearchPopup: document.getElementById("recentSearchPopup"),
+    recentSearchCloseBtn: document.getElementById("recentSearchCloseBtn"),
     recentSearches: document.querySelector(".recent-search")
 };

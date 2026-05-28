@@ -27,7 +27,7 @@
         <button id="mobileTableCompactBtn" class="mobile-top-bar-btn" type="button" aria-pressed="true" aria-label="Disable compact table">
           <span id="mobileTableCompactIcon" class="material-symbols-rounded">arrows_outward</span>
         </button>
-        <button id="mobileHistoryBtn" class="mobile-top-bar-btn" type="button">
+        <button id="mobileHistoryBtn" class="mobile-top-bar-btn" type="button" aria-label="Open recent searches">
           <span id="mobileHistoryIcon" class="material-symbols-rounded">history</span>
         </button>
       </div>
@@ -42,7 +42,7 @@
 
     <main class="layout">
       <button id="panelBackdrop" class="panel-backdrop" type="button" aria-label="Close filters"></button>
-      <section id="controlsPanel" class="panel controls-panel collapsed" >
+      <section class="panel controls-panel collapsed" id="controlsPanel">
         <div class="controls-header">
           <div class="actions">
             <button id="applyBtn" class="primary-btn">Apply</button>
@@ -55,7 +55,7 @@
         </div>
 
         <div id="historyBar" class="controls-header">
-          <button class="panel-side-btn history-btn" type="button">
+          <button id="historyBtn" class="panel-side-btn history-btn" type="button" aria-label="Open recent searches">
             <span class="material-symbols-rounded">history</span>
           </button>
         </div>
@@ -63,9 +63,6 @@
         <div id="settingsContent" class="settings-content">
 
           <div class="settings-grid">
-            <div class="setting-card" style="display: none;">
-              <div class="recent-search"></div>
-            </div>
             <div class="setting-card">
               <div id="playerOptions" class="player-options"></div>
             </div>
@@ -76,6 +73,18 @@
 
         </div>
       </section>
+
+      <div id="recentSearchPopup" class="recent-search-popup hidden" role="dialog" aria-modal="true" aria-labelledby="recentSearchTitle">
+        <div class="recent-search-popup-card">
+          <div class="recent-search-popup-header">
+            <h2 id="recentSearchTitle">Recent searches</h2>
+            <button id="recentSearchCloseBtn" class="recent-search-close-btn" type="button" aria-label="Close recent searches">
+              <span class="material-symbols-rounded">close</span>
+            </button>
+          </div>
+          <div class="recent-search"></div>
+        </div>
+      </div>
 
       <section class="panel table-panel">
         <div class="table-panel-scroll table-wrap">

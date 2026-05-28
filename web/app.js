@@ -26,17 +26,42 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 function isMobileLayout() {
   return window.matchMedia(MOBILE_FILTER_PANEL_QUERY).matches;
-} 
+}
+
+function updateBackdropVisibility() {
+  const isPanelOpen = !dom.controlsPanel.classList.contains("collapsed");
+  const isRecentSearchOpen = dom.recentSearchPopup && !dom.recentSearchPopup.classList.contains("hidden");
+
+  if (dom.panelBackdrop) {
+    dom.panelBackdrop.classList.toggle("visible", isPanelOpen || isRecentSearchOpen);
+  }
+}
 
 function setPanelOpen(isOpen) {
   dom.controlsPanel.classList.toggle("collapsed", !isOpen);
-  dom.historyBar.classList.toggle("hidden", isOpen);
+
+  if (dom.historyBar) {
+    dom.historyBar.classList.toggle("hidden", isOpen);
+  }
+
   dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
   dom.settingsToggleIcon.textContent = isOpen ? "close" : "filter_list";
+  updateBackdropVisibility();
+}
 
-  if (dom.panelBackdrop) {
-    dom.panelBackdrop.classList.toggle("visible", isOpen);
+function setRecentSearchPopupOpen(isOpen) {
+  if (!dom.recentSearchPopup) {
+    return;
   }
+
+  dom.recentSearchPopup.classList.toggle("hidden", !isOpen);
+
+  if (isOpen) {
+    renderRecentSearches();
+    dom.recentSearchCloseBtn?.focus();
+  }
+
+  updateBackdropVisibility();
 }
 
 function updateResultsSummary() {
@@ -60,13 +85,16 @@ function cloneSearchRequest(searchRequest) {
   return JSON.parse(JSON.stringify(searchRequest));
 }
 
-function getRecentSearchRequestKey(searchRequest) {
-  const searchKey = cloneSearchRequest(searchRequest);
-  delete searchKey.page;
-  delete searchKey.pageSize;
-  delete searchKey.page_size;
+function getStoredSearchRequest(searchRequest) {
+  const storedRequest = cloneSearchRequest(searchRequest);
+  delete storedRequest.page;
+  delete storedRequest.pageSize;
+  delete storedRequest.page_size;
+  return storedRequest;
+}
 
-  return JSON.stringify(searchKey);
+function getRecentSearchRequestKey(searchRequest) {
+  return JSON.stringify(getStoredSearchRequest(searchRequest));
 }
 
 function loadRecentSearches() {
@@ -98,11 +126,7 @@ function saveRecentSearches() {
 }
 
 function rememberRecentSearch(searchRequest) {
-  const storedRequest = cloneSearchRequest(searchRequest);
-  delete storedRequest.page;
-  delete storedRequest.pageSize;
-  delete storedRequest.page_size;
-
+  const storedRequest = getStoredSearchRequest(searchRequest);
   const searchKey = getRecentSearchRequestKey(storedRequest);
 
   state.recentSearches = [
@@ -116,6 +140,44 @@ function rememberRecentSearch(searchRequest) {
 
   saveRecentSearches();
   renderRecentSearches();
+}
+
+function buildPagedSearchRequest(requestedPage, searchRequestOverride, append) {
+  const sourceRequest = searchRequestOverride
+    ? cloneSearchRequest(searchRequestOverride)
+    : append && state.activeSearchRequest
+      ? cloneSearchRequest(state.activeSearchRequest)
+      : buildSearchRequest({
+          page: requestedPage,
+          pageSize: state.pageSize
+        });
+
+  sourceRequest.page = requestedPage;
+
+  if ("page_size" in sourceRequest) {
+    sourceRequest.page_size = state.pageSize;
+  } else {
+    sourceRequest.pageSize = state.pageSize;
+  }
+
+  return sourceRequest;
+}
+
+function applyRecentSearch(index) {
+  const recentSearch = state.recentSearches[index];
+  const searchRequest = recentSearch?.request || recentSearch;
+
+  if (!searchRequest) {
+    return;
+  }
+
+  setRecentSearchPopupOpen(false);
+  setPanelOpen(false);
+  cancelScheduledSortRefresh();
+  applyFilters(1, {
+    remember: true,
+    searchRequestOverride: searchRequest
+  });
 }
 
 function initPagelessScroll() {
@@ -213,7 +275,7 @@ function maybeLoadNextMatchPage() {
   applyFilters(nextPage, { append: true });
 }
 
-async function applyFilters(page = 1, { append = false, remember = true } = {}) {
+async function applyFilters(page = 1, { append = false, remember = true, searchRequestOverride = null } = {}) {
   const enabledColumns = getEnabledColumns();
   const requestedPage = Math.max(1, Number(page) || 1);
   const requestId = ++latestRequestId;
@@ -229,10 +291,11 @@ async function applyFilters(page = 1, { append = false, remember = true } = {}) 
       await new Promise(requestAnimationFrame);
     }
 
-    const searchRequest = buildSearchRequest({
-      page: requestedPage,
-      pageSize: state.pageSize
-    });
+    const searchRequest = buildPagedSearchRequest(
+      requestedPage,
+      searchRequestOverride,
+      append
+    );
 
     if (append) {
       state.isLoadingNextMatchPage = true;
@@ -275,6 +338,7 @@ async function applyFilters(page = 1, { append = false, remember = true } = {}) 
     }));
 
     if (!append) {
+      state.activeSearchRequest = getStoredSearchRequest(searchRequest);
       renderFilterChips(searchRequest);
 
       if (remember) {
@@ -349,6 +413,7 @@ function resetControls() {
     }
   });
 
+  state.activeSearchRequest = null;
   renderFilterChips({});
   updateResultsSummary();
   cancelScheduledSortRefresh();
@@ -363,10 +428,40 @@ function initCollapsibleSettings() {
 
   dom.panelBackdrop?.addEventListener("click", () => {
     setPanelOpen(false);
+    setRecentSearchPopupOpen(false);
   });
 
   dom.mobileFiltersBtn?.addEventListener("click", () => {
     setPanelOpen(true);
+  });
+
+  dom.historyBtn?.addEventListener("click", () => {
+    setRecentSearchPopupOpen(true);
+  });
+
+  dom.mobileHistoryBtn?.addEventListener("click", () => {
+    setPanelOpen(false);
+    setRecentSearchPopupOpen(true);
+  });
+
+  dom.recentSearchCloseBtn?.addEventListener("click", () => {
+    setRecentSearchPopupOpen(false);
+  });
+
+  dom.recentSearches?.addEventListener("click", (event) => {
+    const recentSearchBtn = event.target.closest(".recent-search-btn");
+    if (!recentSearchBtn) {
+      return;
+    }
+
+    applyRecentSearch(Number(recentSearchBtn.dataset.recentSearchIndex));
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setPanelOpen(false);
+      setRecentSearchPopupOpen(false);
+    }
   });
 
   function toggleTableCompact() {
@@ -393,9 +488,7 @@ function initCollapsibleSettings() {
   const startsOpen = !dom.controlsPanel.classList.contains("collapsed");
   setPanelOpen(startsOpen);
 
-  if (dom.panelBackdrop) {
-    dom.panelBackdrop.classList.toggle("visible", startsOpen);
-  }
+  updateBackdropVisibility();
 }
 
 async function init() {

@@ -494,18 +494,12 @@ export function renderRecentSearches(recentSearches = state.recentSearches) {
 
   if (!Array.isArray(recentSearches) || recentSearches.length === 0) {
     dom.recentSearches.innerHTML = `
-      <div class="recent-search-header">
-        <span>Recent searches</span>
-      </div>
       <p class="recent-search-empty">Your latest searches will appear here.</p>
     `;
     return;
   }
 
   dom.recentSearches.innerHTML = `
-    <div class="recent-search-header">
-      <span>Recent searches</span>
-    </div>
     <div class="recent-search-list">
       ${recentSearches.map((recentSearch, index) => {
         const chipHtml = renderSearchChipItems(
@@ -514,7 +508,7 @@ export function renderRecentSearches(recentSearches = state.recentSearches) {
         ) || `<div class="search-chip"><span class="search-chip-value">Default search</span></div>`;
 
         return `
-          <button class="recent-search-btn">
+          <button class="recent-search-btn" type="button" data-recent-search-index="${index}">
             <div class="search-chips" aria-label="Recent search ${index + 1}">
               ${chipHtml}
             </div>
