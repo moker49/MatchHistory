@@ -64,6 +64,45 @@ function setRecentSearchPopupOpen(isOpen) {
   updateBackdropVisibility();
 }
 
+function isDefaultSearchRequest(searchRequest = {}) {
+  const storedRequest = getStoredSearchRequest(searchRequest);
+
+  const hasFilters = Array.isArray(storedRequest.filters)
+    && storedRequest.filters.some((filterGroup) =>
+      Array.isArray(filterGroup.filters) && filterGroup.filters.length > 0
+    );
+
+  if (hasFilters) {
+    return false;
+  }
+
+  const sortKey = storedRequest.sort_key ?? storedRequest.sort?.key;
+  const sortDirection = storedRequest.sort_direction ?? storedRequest.sort?.direction;
+
+  const hasNonDefaultSort =
+    sortKey && sortDirection &&
+    !(sortKey === "DATE" && sortDirection === "desc");
+
+  if (hasNonDefaultSort) {
+    return false;
+  }
+
+  const selectedPlayers = Array.isArray(storedRequest.players)
+    ? storedRequest.players
+    : [];
+
+  const defaultPlayers = state.players
+    .map((player) => player.PUUID)
+    .filter((puuid) => puuid !== OTHER_PLAYER_KEY);
+
+  const hasDefaultPlayers =
+    selectedPlayers.length === defaultPlayers.length &&
+    defaultPlayers.every((puuid) => selectedPlayers.includes(puuid)) &&
+    !selectedPlayers.includes(OTHER_PLAYER_KEY);
+
+  return hasDefaultPlayers;
+}
+
 function updateResultsSummary() {
   const totalMatches = Number(state.totalCount) || 0;
 
@@ -341,7 +380,7 @@ async function applyFilters(page = 1, { append = false, remember = true, searchR
       state.activeSearchRequest = getStoredSearchRequest(searchRequest);
       renderFilterChips(searchRequest);
 
-      if (remember) {
+      if (remember && !isDefaultSearchRequest(searchRequest)) {
         rememberRecentSearch(searchRequest);
       }
     }
