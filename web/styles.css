@@ -1050,7 +1050,6 @@ input[type="number"] {
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: var(--accent);
   opacity: 0;
   transition: opacity var(--motion-fast) ease;
 }
