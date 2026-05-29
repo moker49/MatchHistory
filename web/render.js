@@ -820,11 +820,13 @@ function formatDateCell(value) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   const year = date.getFullYear();
+  const shortYear = `-${String(year).slice(-2)}`;
 
   if (isMobileTableCompact()) {
     return `
-      <span class="date-cell">
+      <span class="date-cell date-cell-compact">
         <span class="date-main">${month}-${day}</span>
+        <span class="date-year">${shortYear}</span>
       </span>
     `;
   }

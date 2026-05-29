@@ -817,6 +817,16 @@ tbody tr.match-group-row:hover {
   font-size: 0.85em;
 }
 
+.date-year {
+  color: var(--muted);
+  font-size: 0.60em;
+  font-weight: 600;
+}
+
+.date-cell-compact {
+  gap: 0;
+}
+
 .empty-state {
   padding: 30px 18px;
   color: var(--muted);
