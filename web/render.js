@@ -76,7 +76,7 @@ function updateColumnFilterModeVisibility({
     return;
   }
 
-  const filterCount = filtersWrap.querySelectorAll(".filter-row").length;
+  const filterCount = filtersWrap.querySelectorAll(".filter-row:not(.is-removing)").length;
   const isEnabled = checkbox.checked;
   const shouldBeVisible = isEnabled && filterCount >= 2;
   const isVisible = columnFilterMode.classList.contains("visible");
@@ -114,16 +114,21 @@ function updateColumnFilterModeVisibility({
   }
 
   const startHeight = columnFilterMode.getBoundingClientRect().height;
+
+  columnFilterMode.style.display = "grid";
   columnFilterMode.style.overflow = "hidden";
   columnFilterMode.style.height = `${startHeight}px`;
   columnFilterMode.style.marginTop = "12px";
   columnFilterMode.style.opacity = "1";
+  columnFilterMode.style.transition = "none";
+
+  columnFilterMode.offsetHeight;
 
   requestAnimationFrame(() => {
     columnFilterMode.style.transition =
       "height 180ms cubic-bezier(0.22, 1, 0.36, 1), " +
       "margin-top 180ms cubic-bezier(0.22, 1, 0.36, 1), " +
-      "opacity 100ms ease";
+      "opacity 140ms ease";
     columnFilterMode.style.height = "0px";
     columnFilterMode.style.marginTop = "0px";
     columnFilterMode.style.opacity = "0";
@@ -258,6 +263,14 @@ function createFilterRow(column, filtersWrap, checkbox, columnFilterMode, operat
     const rowHeight = row.getBoundingClientRect().height;
 
     row.classList.add("is-removing");
+
+    updateColumnFilterModeVisibility({
+      checkbox,
+      filtersWrap,
+      columnFilterMode,
+      supportsColumnFilters: true
+    });
+
     row.style.height = `${rowHeight}px`;
     row.style.overflow = "hidden";
 
@@ -272,12 +285,6 @@ function createFilterRow(column, filtersWrap, checkbox, columnFilterMode, operat
 
     window.setTimeout(() => {
       row.remove();
-      updateColumnFilterModeVisibility({
-        checkbox,
-        filtersWrap,
-        columnFilterMode,
-        supportsColumnFilters: true
-      });
     }, 180);
   });
 
