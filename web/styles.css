@@ -769,7 +769,7 @@ tbody tr.match-group-row:hover {
 .table-sort-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   padding: 0;
   background: transparent;
   color: inherit;
@@ -799,7 +799,7 @@ tbody tr.match-group-row:hover {
 }
 
 .table-sort-btn.active .table-sort-indicator {
-  color: var(--accent);
+  color: var(--warning);
 }
 
 .date-cell {
@@ -1153,8 +1153,8 @@ input[type="number"] {
 
   table th,
   table td {
-    padding-left: 6px;
-    padding-right: 6px;
+    padding-left: 5px;
+    padding-right: 5px;
   }
 
   .table-panel-header {
