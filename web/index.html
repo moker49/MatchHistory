@@ -17,13 +17,15 @@
 <body>
   <div class="app-shell">
     <header class="mobile-top-bar">
-      <button id="mobileFiltersBtn" class="mobile-top-bar-btn" type="button" aria-label="Open filters">
-        <span class="material-symbols-rounded">filter_list</span>
-      </button>
+      <div class="mobile-header">
+        <button id="mobileFiltersBtn" class="mobile-top-bar-btn" type="button" aria-label="Open filters">
+          <span class="material-symbols-rounded">filter_list</span>
+        </button>
+        
+        <h1>Match History</h1>
+      </div>
 
-      <h1>Match History</h1>
-
-      <div class="mobileActions">
+      <div class="mobile-actions">
         <button id="mobileTableCompactBtn" class="mobile-top-bar-btn" type="button" aria-pressed="true" aria-label="Disable compact table">
           <span id="mobileTableCompactIcon" class="material-symbols-rounded">arrows_outward</span>
         </button>
@@ -94,7 +96,7 @@
           </table>
         </div>
 
-        <div class="table-panel-footer panel-header">
+        <div class="table-panel-footer">
           <div class="table-description">
             <p>Unavailable: Brawl, Mayhem</p>
             <p id="resultsSummary">-</p>

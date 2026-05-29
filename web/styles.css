@@ -156,7 +156,6 @@ p {
 .controls-header {
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
   gap: 12px;
 }
 
@@ -172,10 +171,10 @@ p {
   left: 0;
   bottom: 0;
   z-index: 30;
+  gap: 16px;
   display: flex;
   flex-direction: column;
   width: min(480px, 100vw);
-  overflow: hidden;
   padding: 20px;
   padding-right: 0;
   transition:
@@ -244,7 +243,6 @@ p {
 .table-description {
   display: flex;
   justify-content: space-between;
-  width: 100%;
   color: var(--muted);
 }
 
@@ -290,12 +288,6 @@ p {
   pointer-events: auto;
 }
 
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
 select,
 .filter-input[type="date"] {
   appearance: none;
@@ -335,7 +327,7 @@ input::-webkit-calendar-picker-indicator {
 
 .settings-grid {
   display: grid;
-  gap: 24px;
+  gap: 16px;
 }
 
 .setting-card {
@@ -945,9 +937,8 @@ input[type="number"] {
   display: none;
 }
 
-.mobileActions {
+.mobile-actions {
   display: flex;
-  margin-left: auto;
 }
 
 /* Recent searches */
@@ -962,10 +953,11 @@ input[type="number"] {
 }
 
 .recent-search-popup-card {
+  display: grid;
+  gap: 10px;
   width: min(620px, 100%);
   max-height: min(680px, calc(100dvh - 40px));
-  overflow: hidden;
-  padding: 0;
+  padding: 16px;
   pointer-events: auto;
   background: var(--panel);
   border: 1px solid rgba(79, 209, 197, 0.18);
@@ -980,8 +972,7 @@ input[type="number"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 18px 14px;
+  padding-left: 6px;
 }
 
 .recent-search-popup-header h2 {
@@ -1018,10 +1009,6 @@ input[type="number"] {
   background: var(--surface-3);
 }
 
-.recent-search {
-  padding: 18px;
-}
-
 .recent-search-header {
   display: none;
 }
@@ -1038,16 +1025,12 @@ input[type="number"] {
 
 .recent-search-list {
   display: grid;
-  gap: 12px;
+  gap: 6px;
 }
 
 .recent-search-btn {
-  position: relative;
-  appearance: none;
-  width: 100%;
-  padding: 14px 16px;
+  padding: 14px;
   overflow: hidden;
-  text-align: left;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
@@ -1104,16 +1087,20 @@ input[type="number"] {
   }
 
   .mobile-top-bar {
-    flex: 0 0 auto;
-
     display: flex;
     align-items: center;
+    justify-content: space-between;
 
     height: 72px;
 
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     z-index: 20;
+  }
+
+  .mobile-header {
+    display: flex;
+    align-items: center;
   }
 
   .mobile-top-bar h1 {
@@ -1130,10 +1117,6 @@ input[type="number"] {
     cursor: pointer;
   }
 
-  .controls-header {
-    justify-content: flex-start;
-  }
-
   #historyBar {
     display: none;
   }
@@ -1146,8 +1129,7 @@ input[type="number"] {
     padding: 0 0 10px 0;
 
     border-radius: 0;
-    border-left: 0;
-    border-right: 0;
+    border: 0;
     box-shadow: none;
   }
 
@@ -1174,17 +1156,11 @@ input[type="number"] {
   .table-chips.has-chips {
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding-bottom: 2px;
     scrollbar-width: none;
   }
 
   .table-chips.has-chips::-webkit-scrollbar {
     display: none;
-  }
-
-  .filter-chip {
-    flex: 0 0 auto;
-    max-width: 78vw;
   }
 
   /* Recent searches */
@@ -1200,22 +1176,9 @@ input[type="number"] {
     border-radius: 22px 22px 16px 16px;
   }
 
-  .recent-search {
-    padding: 14px;
-  }
-
-  .recent-search-popup-header {
-    padding: 16px 14px 12px;
-  }
-
-  .recent-search-btn {
-    padding: 13px 14px;
-  }
-
   .search-chips {
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding-bottom: 2px;
     scrollbar-width: none;
   }
 
