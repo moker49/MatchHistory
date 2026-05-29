@@ -28,7 +28,7 @@ const HARDCODED_COLUMNS = [
     { key: "CHAMPION", label: "Champion", type: "select", compact: "Champ" },
     { key: "DATE", label: "Date", type: "date" },
     { key: "DURATION", label: "Duration", type: "number", compact: "Dur" },
-    { key: "RESULT", label: "Result", type: "select", compact: "W/L" },
+    { key: "RESULT", label: "Result", type: "select" },
 
     { key: "KDA", label: "KDA", type: "text" },
     { key: "KILLS", label: "Kills", type: "number", compact: "K" },

@@ -305,7 +305,7 @@ function getFilterOperatorLabel(type, operator) {
 
   if (type === "date") {
     return {
-      eq: "is",
+      eq: "",
       gt: "after",
       gte: "on/after",
       lt: "before",
@@ -315,14 +315,14 @@ function getFilterOperatorLabel(type, operator) {
 
   if (type === "select" || type === "boolean") {
     return {
-      equals: "is",
-      not: "is not"
+      equals: "",
+      not: "not"
     }[operator] ?? operator;
   }
 
   return {
     contains: "contains",
-    equals: "equals"
+    equals: ""
   }[operator] ?? operator;
 }
 
@@ -339,6 +339,25 @@ function getFilterValueLabel(column, value) {
   return value;
 }
 
+function getChipValueParts(values = []) {
+  const visibleValues = values.filter(Boolean);
+
+  if (visibleValues.length === 0) {
+    return {
+      displayedValues: "",
+      suffix: ""
+    };
+  }
+
+  const shownValues = visibleValues.slice(0, 3);
+  const hiddenCount = visibleValues.length - shownValues.length;
+
+  return {
+    displayedValues: shownValues.join(", "),
+    suffix: hiddenCount > 0 ? ` +${hiddenCount}` : ""
+  };
+}
+
 function getFilterChipItems(searchRequest = {}) {
   return (searchRequest.filters || [])
     .filter((filterGroup) => Array.isArray(filterGroup.filters) && filterGroup.filters.length > 0)
@@ -348,31 +367,39 @@ function getFilterChipItems(searchRequest = {}) {
         return null;
       }
 
-      const filterCount = filterGroup.filters.length;
-      const filter = filterGroup.filters[0];
+      const filters = filterGroup.filters;
+      const firstFilter = filters[0];
 
-      const operatorLabel = getFilterOperatorLabel(filter.type, filter.operator);
-      const valueLabel = getFilterValueLabel(column, filter.value);
+      const hasMixedOperators = filters.some((filter) =>
+        filter.type !== firstFilter.type || filter.operator !== firstFilter.operator
+      );
 
-      if (filterCount > 1) {
+      if (hasMixedOperators) {
         return {
-          label: column.label,
+          label: column.compact ?? column.label,
           operator: "",
-          value: `${filterCount} filters`
+          value: `${filters.length} filters`,
+          suffix: ""
         };
       }
 
-      if (
-        String(operatorLabel ?? "").length === 0 ||
-        String(valueLabel ?? "").length === 0
-      ) {
+      const operatorLabel = getFilterOperatorLabel(firstFilter.type, firstFilter.operator);
+
+      const valueLabels = filters
+        .map((filter) => getFilterValueLabel(column, filter.value))
+        .filter(Boolean);
+
+      const { displayedValues, suffix } = getChipValueParts(valueLabels);
+
+      if (!displayedValues) {
         return null;
       }
 
       return {
-        label: column.label,
+        label: column.compact ?? column.label,
         operator: operatorLabel,
-        value: valueLabel
+        value: displayedValues,
+        suffix
       };
     })
     .filter(Boolean);
@@ -407,16 +434,13 @@ function getPlayerChipItem(searchRequest = {}) {
     .map((puuid) => state.players.find((player) => player.PUUID === puuid)?.PLAYER)
     .filter(Boolean);
 
-  if (playerNames.length === 0) {
+  const { displayedValues, suffix } = getChipValueParts(playerNames);
+
+  if (!displayedValues) {
     return null;
   }
 
-  return {
-    label: "Players",
-    value: playerNames.length <= 2
-      ? playerNames.join(", ")
-      : `${playerNames[0]} +${playerNames.length - 1}`
-  };
+  return { value: displayedValues, suffix };
 }
 
 function getSortChipItem(searchRequest = {}) {
@@ -438,7 +462,7 @@ function getSortChipItem(searchRequest = {}) {
   return {
     label: "Sort",
     value: columnLabel,
-    direction : directionLabel
+    suffix : directionLabel
   };
 }
 
@@ -456,7 +480,7 @@ function renderSearchChipItems(chipItems = [], className = "filter-chip") {
       ${chip.label ? `<span class="${className}-label">${escapeHtml(chip.label)}</span>` : ""}
       ${chip.operator ? `<span class="${className}-operator">${escapeHtml(chip.operator)}</span>` : ""}
       ${chip.value ? `<span class="${className}-value">${escapeHtml(chip.value)}</span>` : ""}
-      ${chip.direction ? `<span class="${className}-operator">${escapeHtml(chip.direction)}</span>` : ""}
+      ${chip.suffix ? `<span class="${className}-operator">${escapeHtml(chip.suffix)}</span>` : ""}
     </div>
   `).join("");
 }

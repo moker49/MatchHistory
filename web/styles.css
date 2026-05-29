@@ -232,6 +232,7 @@ p {
 }
 
 .filter-chip-operator {
+  font-weight: 600;
   color: var(--warning);
 }
 
