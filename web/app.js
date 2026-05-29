@@ -212,13 +212,12 @@ function applyRecentSearch(index) {
   }
 
   setRecentSearchPopupOpen(false);
-  setPanelOpen(false);
   cancelScheduledSortRefresh();
+  applySearchRequestToControls(searchRequest);
   applyFilters(1, {
     remember: true,
     searchRequestOverride: searchRequest
   });
-  applySearchRequestToControls(searchRequest);
 }
 
 function initPagelessScroll() {
@@ -326,7 +325,7 @@ async function applyFilters(page = 1, { append = false, remember = true, searchR
     dom.applyBtn.disabled = true;
     dom.applyBtn.textContent = "Loading...";
 
-    if (!append && isMobileLayout()) {
+    if (!append) {
       await delay(75);
       setPanelOpen(false);
       await new Promise(requestAnimationFrame);
