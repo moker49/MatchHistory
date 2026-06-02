@@ -45,6 +45,7 @@ export const dom = {
   resetBtn: document.getElementById("resetBtn"),
   settingsToggle: document.getElementById("settingsToggle"),
   settingsToggleIcon: document.getElementById("settingsToggleIcon"),
+  controlsHeader: document.querySelector(".controls-header"),
   controlsPanel: document.getElementById("controlsPanel"),
   historyBar: document.getElementById("historyBar"),
   historyBtn: document.getElementById("historyBtn"),

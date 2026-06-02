@@ -45,6 +45,10 @@ function setPanelOpen(isOpen) {
     dom.historyBar.classList.toggle("hidden", isOpen);
   }
 
+  if (isMobileLayout()) {
+    dom.controlsHeader.classList.toggle("hidden", !isOpen);
+  }
+
   dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
   dom.settingsToggleIcon.textContent = isOpen ? "close" : "filter_list";
   updateBackdropVisibility();
@@ -533,6 +537,9 @@ async function init() {
 
   window.matchMedia("(max-width: 768px)").addEventListener("change", () => {
     renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []);
+    const isPanelClosed = dom.controlsPanel.classList.contains("collapsed");
+    const hide = isMobileLayout() && isPanelClosed
+    dom.controlsHeader.classList.toggle("hidden", hide);
   });
 
   dom.applyBtn.addEventListener("click", () => {

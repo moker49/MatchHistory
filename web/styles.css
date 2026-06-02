@@ -28,6 +28,7 @@
   --accent: hsl(174, 59%, 56%);
   --accent-b: hsl(172, 66%, 50%);
   --accent-2: hsl(150, 59%, 56%);
+  --comp: hsl(43, 96%, 56%);
   --accent-soft: hsla(174, 59%, 56%, 0.12);
   --accent-2-soft: hsla(150, 59%, 56%, 0.12);
 
@@ -233,7 +234,7 @@ p {
 
 .filter-chip-operator {
   font-weight: 600;
-  color: var(--warning);
+  color: var(--comp);
 }
 
 .filter-chip-value {
@@ -786,7 +787,7 @@ tbody tr.match-group-row:hover {
 
 .table-sort-btn:hover,
 .table-sort-btn.active {
-  color: var(--text);
+  color: var(--comp);
 }
 
 .table-sort-label {
@@ -802,7 +803,7 @@ tbody tr.match-group-row:hover {
 }
 
 .table-sort-btn.active .table-sort-indicator {
-  color: var(--warning);
+  color: var(--comp);
 }
 
 .date-cell {
@@ -1005,9 +1006,9 @@ input[type="number"] {
   width: 40px;
   height: 40px;
   padding: 0;
-  background: var(--surface-2);
+  background: none;
   color: var(--muted);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 14px;
   cursor: pointer;
   transition:
@@ -1019,8 +1020,6 @@ input[type="number"] {
 
 .recent-search-close-btn:hover {
   color: var(--text);
-  border-color: var(--border-hover);
-  background: var(--surface-3);
 }
 
 .recent-search-header {
@@ -1099,6 +1098,10 @@ input[type="number"] {
     display: none;
   }
 
+  #historyBar {
+    display: none;
+  }
+
   .mobile-top-bar {
     display: flex;
     align-items: center;
@@ -1128,10 +1131,6 @@ input[type="number"] {
     color: var(--text);
     border: none;
     cursor: pointer;
-  }
-
-  #historyBar {
-    display: none;
   }
 
   .controls-panel.collapsed {
