@@ -418,7 +418,6 @@ function resetControls() {
       .map((player) => player.PUUID)
       .filter((puuid) => puuid !== OTHER_PLAYER_KEY)
   );
-  // resetPagelessState();
   state.sort.key = "DATE";
   state.sort.direction = "desc";
 
@@ -453,11 +452,7 @@ function resetControls() {
     }
   });
 
-  // state.activeSearchRequest = null;
-  renderFilterChips({});
-  // updateResultsSummary();
   cancelScheduledSortRefresh();
-  // applyFilters(1, { remember: false });
 }
 
 function initCollapsibleSettings() {

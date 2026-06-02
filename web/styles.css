@@ -516,8 +516,11 @@ input::-webkit-calendar-picker-indicator {
 
 .filters-wrap {
   display: grid;
-  gap: 8px;
   margin-top: 12px;
+}
+
+.filter-row + .filter-row {
+  margin-top: 8px;
 }
 
 .filter-row {
