@@ -40,13 +40,12 @@ function updateBackdropVisibility() {
 
 function setPanelOpen(isOpen) {
   dom.controlsPanel.classList.toggle("collapsed", !isOpen);
+  if (!isMobileLayout()) {
+    dom.settingsContent.classList.toggle("hidden", !isOpen);
+  }
 
   if (dom.historyBar) {
     dom.historyBar.classList.toggle("hidden", isOpen);
-  }
-
-  if (isMobileLayout()) {
-    dom.controlsHeader.classList.toggle("hidden", !isOpen);
   }
 
   dom.settingsToggle.setAttribute("aria-expanded", String(isOpen));
@@ -538,8 +537,8 @@ async function init() {
   window.matchMedia("(max-width: 768px)").addEventListener("change", () => {
     renderTable(state.lastRows || [], state.lastVisibleColumnKeys || []);
     const isPanelClosed = dom.controlsPanel.classList.contains("collapsed");
-    const hide = isMobileLayout() && isPanelClosed
-    dom.controlsHeader.classList.toggle("hidden", hide);
+    const hide = !isMobileLayout() && isPanelClosed
+    dom.settingsContent.classList.toggle("hidden", hide);
   });
 
   dom.applyBtn.addEventListener("click", () => {

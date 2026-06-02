@@ -186,7 +186,7 @@ p {
   border-right: 1px solid var(--border);
 }
 
-.controls-panel .settings-content {
+.settings-content {
   flex: 1;
   overflow: auto;
   scrollbar-color: var(--border) var(--panel);
@@ -194,10 +194,6 @@ p {
 
 .controls-panel.collapsed {
   transform: translateX(calc(-100% + 60px));
-}
-
-.controls-panel.collapsed .settings-content {
-  display: none;
 }
 
 .settings-content > * {
