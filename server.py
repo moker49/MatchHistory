@@ -96,6 +96,20 @@ file_handler = RotatingFileHandler(
 file_handler.setFormatter(log_formatter)
 root_logger.addHandler(file_handler)
 
+wake_logger = logging.getLogger("wake")
+wake_logger.setLevel(logging.INFO)
+wake_logger.propagate = False
+wake_logger.handlers.clear()
+
+wake_file_handler = RotatingFileHandler(
+    "wake.log",
+    maxBytes=1_048_576,
+    backupCount=3,
+    encoding="utf-8"
+)
+wake_file_handler.setFormatter(log_formatter)
+wake_logger.addHandler(wake_file_handler)
+
 class IgnoreWakeFilter(logging.Filter):
     def filter(self, record):
         message = record.getMessage()
@@ -505,6 +519,7 @@ def search_matches(search_request):
     }
 
 def wait_for_rate_limit(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECONDS):
+    slept_ms = 0.0
     now = time.time()
     last_seen = _last_request_by_ip.get(key)
 
@@ -515,50 +530,94 @@ def wait_for_rate_limit(key: str, window_seconds: float = RATE_LIMIT_WINDOW_SECO
         if remaining > 0:
             logging.info("Rate limit hit for %s. Sleeping %.2fs", key, remaining)
             time.sleep(remaining)
+            slept_ms = round(remaining * 1000, 2)
 
     _last_request_by_ip[key] = time.time()
+    return slept_ms
 
 def run_cache_warm():
+    started = time.perf_counter()
     warmed = {}
 
-    if METADATA_CACHE_ENABLED and metadata_cache.get(COLUMN_OPTIONS_CACHE_KEY) is None:
-        options = fetch_column_options()
-        metadata_cache[COLUMN_OPTIONS_CACHE_KEY] = json.dumps({
-            "ok": True,
-            "options": options,
-            "cached": True
+    logging.info("Cache warm started | cache_version=%s", search_cache_version)
+
+    try:
+        column_options_started = time.perf_counter()
+
+        if METADATA_CACHE_ENABLED and metadata_cache.get(COLUMN_OPTIONS_CACHE_KEY) is None:
+            options = fetch_column_options()
+            metadata_cache[COLUMN_OPTIONS_CACHE_KEY] = json.dumps({
+                "ok": True,
+                "options": options,
+                "cached": True
+            })
+            warmed["column_options"] = {"cached": False}
+        else:
+            warmed["column_options"] = {"cached": True}
+
+        logging.info(
+            "Column options warm complete | cached=%s | elapsed_ms=%s",
+            warmed["column_options"]["cached"],
+            round((time.perf_counter() - column_options_started) * 1000, 2)
+        )
+
+        # default search
+        default_search_request = normalize_search_request({
+            "players": DEFAULT_SEARCH_PLAYERS,
+            "include_other_players": False,
+            "visible_columns": DEFAULT_VISIBLE_COLUMNS,
+            "filter_mode": "all",
+            "filters": [],
+            "page": 1,
+            "page_size": PAGE_SIZE,
+            "sort_key": "DATE",
+            "sort_direction": "desc"
         })
-        warmed["column_options"] = {"cached": False}
-    else:
-        warmed["column_options"] = {"cached": True}
 
-    # default search
-    default_search_request = normalize_search_request({
-        "players": DEFAULT_SEARCH_PLAYERS,
-        "include_other_players": False,
-        "visible_columns": DEFAULT_VISIBLE_COLUMNS,
-        "filter_mode": "all",
-        "filters": [],
-        "page": 1,
-        "page_size": PAGE_SIZE,
-        "sort_key": "DATE",
-        "sort_direction": "desc"
-    })
+        current_version = search_cache_version
+        search_cache_key = make_search_cache_key(default_search_request, current_version)
 
-    current_version = search_cache_version
-    search_cache_key = make_search_cache_key(default_search_request, current_version)
+        logging.debug("Warm cache key=%s request=%s", search_cache_key, json.dumps(default_search_request, sort_keys=True))
+        logging.info(
+            "Default search warm check | cache_key=%s | page=%s | page_size=%s | players=%s | visible_columns=%s | filters=%s | sort=%s %s",
+            search_cache_key[:12],
+            default_search_request["page"],
+            default_search_request["page_size"],
+            len(default_search_request["players"]),
+            len(default_search_request["visible_columns"]),
+            len(default_search_request["filters"]),
+            default_search_request.get("sort_key"),
+            default_search_request.get("sort_direction")
+        )
 
-    logging.debug("Warm cache key=%s request=%s", search_cache_key, json.dumps(default_search_request, sort_keys=True))
+        default_search_started = time.perf_counter()
 
-    if SEARCH_CACHE_ENABLED and search_cache.get(search_cache_key) is None:
-        result = search_matches(default_search_request)
-        result["cache_version"] = current_version
-        search_cache[search_cache_key] = dict(result)
-        warmed["default_search"] = {"cached": False}
-    else:
-        warmed["default_search"] = {"cached": True}
+        if SEARCH_CACHE_ENABLED and search_cache.get(search_cache_key) is None:
+            result = search_matches(default_search_request)
+            result["cache_version"] = current_version
+            search_cache[search_cache_key] = dict(result)
+            warmed["default_search"] = {"cached": False}
+        else:
+            warmed["default_search"] = {"cached": True}
 
-    return warmed
+        logging.info(
+            "Default search warm complete | cached=%s | elapsed_ms=%s",
+            warmed["default_search"]["cached"],
+            round((time.perf_counter() - default_search_started) * 1000, 2)
+        )
+
+        return warmed
+
+    except Exception:
+        logging.exception("Cache warm failed.")
+        raise
+
+    finally:
+        logging.info(
+            "Cache warm ended | elapsed_ms=%s | warmed=%s",
+            round((time.perf_counter() - started) * 1000, 2),
+            json.dumps(warmed, sort_keys=True)
+        )
 
 # =========================
 # ROUTES
@@ -668,7 +727,7 @@ def api_matches_search():
 
     try:
         client_ip = get_client_ip()
-        wait_for_rate_limit(client_ip)
+        rate_limit_sleep_ms = wait_for_rate_limit(client_ip)
 
         raw_search_request = request.get_json(silent=True) or {}
         search_request = normalize_search_request(raw_search_request)
@@ -685,6 +744,24 @@ def api_matches_search():
                 response = dict(cached)
                 response["cached"] = True
                 response["cache_version"] = current_version
+
+                logging.info(
+                    "Search cache HIT | endpoint=/api/matches/search | client_ip=%s | cache_key=%s | cache_version=%s | rate_limit_sleep_ms=%s | page=%s | page_size=%s | players=%s | include_other_players=%s | visible_columns=%s | filters=%s | filter_mode=%s | sort=%s %s",
+                    client_ip,
+                    cache_key[:12],
+                    current_version,
+                    rate_limit_sleep_ms,
+                    search_request["page"],
+                    search_request["page_size"],
+                    len(search_request["players"]),
+                    search_request.get("include_other_players"),
+                    len(search_request["visible_columns"]),
+                    len(search_request["filters"]),
+                    search_request["filter_mode"],
+                    search_request.get("sort_key"),
+                    search_request.get("sort_direction")
+                )
+
                 return jsonify(response)
 
         start_time = time.perf_counter()
@@ -700,6 +777,24 @@ def api_matches_search():
         if SEARCH_CACHE_ENABLED:
             search_cache[cache_key] = dict(result)
 
+        logging.info(
+            "Search cache MISS | endpoint=/api/matches/search | client_ip=%s | cache_key=%s | cache_version=%s | rate_limit_sleep_ms=%s | query_ms=%s | page=%s | page_size=%s | players=%s | include_other_players=%s | visible_columns=%s | filters=%s | filter_mode=%s | sort=%s %s",
+            client_ip,
+            cache_key[:12],
+            current_version,
+            rate_limit_sleep_ms,
+            elapsed_ms,
+            search_request["page"],
+            search_request["page_size"],
+            len(search_request["players"]),
+            search_request.get("include_other_players"),
+            len(search_request["visible_columns"]),
+            len(search_request["filters"]),
+            search_request["filter_mode"],
+            search_request.get("sort_key"),
+            search_request.get("sort_direction")
+        )
+
         return jsonify(result)
 
     except Exception:
@@ -713,17 +808,24 @@ def api_matches_search():
 
 @app.get("/api/wake")
 def api_ping():
-    now = datetime.now().strftime("%d/%b/%Y %H:%M:%S")
-    logging.debug(
-        '%s - - [%s] "%s %s %s" %s -',
-        request.remote_addr or "-",
-        now,
+    started = time.perf_counter()
+    client_ip = get_client_ip()
+    protocol = request.environ.get("SERVER_PROTOCOL", "HTTP/1.1")
+
+    response = jsonify({"ok": True})
+
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+    wake_logger.info(
+        "Wake request | client_ip=%s | method=%s | path=%s | protocol=%s | status=%s | elapsed_ms=%s",
+        client_ip,
         request.method,
         request.path,
-        request.environ.get("SERVER_PROTOCOL", "HTTP/1.1"),
-        200
+        protocol,
+        response.status_code,
+        elapsed_ms
     )
-    return jsonify({"ok": True})
+
+    return response
 
 
 # =========================
