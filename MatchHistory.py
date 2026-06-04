@@ -112,7 +112,7 @@ def invalidate_cache():
         )
 
         with urllib.request.urlopen(req, timeout=30) as response:
-            body = response.read().decode("utf-8", errors="replace")
+            body = response.read().decode("utf-8", errors="replace").strip()
             logging.info("Search cache invalidated. Response: %s", body)
 
     except Exception:
@@ -129,7 +129,7 @@ def warm_cache():
         )
 
         with urllib.request.urlopen(req, timeout=60) as response:
-            body = response.read().decode("utf-8", errors="replace")
+            body = response.read().decode("utf-8", errors="replace").strip()
             logging.info("Cache warmed. Response: %s", body[:500])
 
     except Exception:
@@ -191,6 +191,29 @@ def riot_api_call(func, *args, **kwargs):
     raise RuntimeError(
         f"Riot API call failed after {max_api_retries} attempts."
     ) from last_exc
+
+
+def log_db_connection(cursor):
+    try:
+        cursor.execute("""
+            SELECT
+                @@SERVERNAME AS server_name,
+                DB_NAME() AS database_name,
+                SUSER_SNAME() AS login_name,
+                USER_NAME() AS database_user;
+        """)
+        row = cursor.fetchone()
+
+        logging.warning(
+            "DB connection | server=%s | database=%s | login=%s | user=%s",
+            row[0], row[1], row[2], row[3]
+        )
+        logging.warning(
+            "DB procedures | insert=%s | ghost_insert=%s | select_existing=%s",
+            insert_proc, ghost_insert_proc, select_all_for_player_proc
+        )
+    except Exception:
+        logging.exception("Failed to log DB connection context.")
 
 
 def get_players(cursor):
@@ -317,6 +340,21 @@ def insert_ghost_match(cursor, match_id, player_puuid):
     sql = f"EXEC {ghost_insert_proc} @MATCH_ID = ?, @PUUID = ?;"
     cursor.execute(sql, (match_id, player_puuid))
 
+
+def ghost_match_exists(cursor, match_id, player_puuid):
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM dbo.[MATCH]
+        WHERE MATCH_ID = ?
+          AND PUUID = ?
+          AND (
+              GAME_MODE IS NULL
+              OR CHAMPION IS NULL
+          );
+    """, (match_id, player_puuid))
+
+    return cursor.fetchone()[0] > 0
+
 def get_game_modes_missing_participant_count(cursor):
     sql = f"EXEC {missing_game_modes_proc};"
     cursor.execute(sql)
@@ -346,8 +384,9 @@ def process_player(con, cursor, player_db):
     is_dry_run = bool(dry_run) and (player_name.lower() == dry_run_player.lower())
     if dry_run and not is_dry_run:
         logging.info("Dry run mode enabled. Skipping player %s (only running for %s).", player_name, dry_run_player)
-        return
+        return False
 
+    player_has_new_data = False
     existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
 
     # If dry run for this player, only run a single epoch
@@ -412,15 +451,70 @@ def process_player(con, cursor, player_db):
                     if is_dry_run:
                         logging.debug("%s | epoch=%s | match_id=%s | dry run - would insert ghost row", player_name, epoch_count, match_id)
                     else:
-                        insert_ghost_match(cursor, match_id, player_puuid)
-                        logging.debug("%s | epoch=%s | match_id=%s | inserted ghost row", player_name, epoch_count, match_id)
+                        if ghost_match_exists(cursor, match_id, player_puuid):
+                            logging.info(
+                                "%s | epoch=%s | match_id=%s | ghost row already exists; skipping ghost insert",
+                                player_name, epoch_count, match_id
+                            )
+                            epoch_skip_count += 1
+                        else:
+                            insert_ghost_match(cursor, match_id, player_puuid)
+                            con.commit()
+                            player_has_new_data = True
+                            epoch_ghost_count += 1
+                            logging.info("%s | epoch=%s | match_id=%s | committed ghost row", player_name, epoch_count, match_id)
                     existing_match_ids.add(match_id)
-                    epoch_ghost_count += 1
                 except Exception:
                     logging.exception(
-                        "%s | epoch=%s | match_id=%s | ghost insert failed",
+                        "%s | epoch=%s | match_id=%s | ghost insert or commit failed",
                         player_name, epoch_count, match_id
                     )
+                    if not is_dry_run:
+                        con.rollback()
+                        existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
+                        logging.warning("%s | epoch=%s | match_id=%s | rollback completed", player_name, epoch_count, match_id)
+                continue
+
+            info = current_match.get("info", {}) if isinstance(current_match, dict) else {}
+            participants = info.get("participants") or []
+
+            if not participants:
+                logging.warning(
+                    "%s | epoch=%s | match_id=%s | no participants returned; inserting ghost row",
+                    player_name, epoch_count, match_id
+                )
+                try:
+                    if is_dry_run:
+                        logging.debug(
+                            "%s | epoch=%s | match_id=%s | dry run - would insert ghost row for empty participants",
+                            player_name, epoch_count, match_id
+                        )
+                    else:
+                        if ghost_match_exists(cursor, match_id, player_puuid):
+                            logging.info(
+                                "%s | epoch=%s | match_id=%s | ghost row already exists for empty participants; skipping ghost insert",
+                                player_name, epoch_count, match_id
+                            )
+                            epoch_skip_count += 1
+                        else:
+                            insert_ghost_match(cursor, match_id, player_puuid)
+                            con.commit()
+                            player_has_new_data = True
+                            epoch_ghost_count += 1
+                            logging.info(
+                                "%s | epoch=%s | match_id=%s | committed ghost row for empty participants",
+                                player_name, epoch_count, match_id
+                            )
+                    existing_match_ids.add(match_id)
+                except Exception:
+                    logging.exception(
+                        "%s | epoch=%s | match_id=%s | ghost insert or commit failed for empty participants",
+                        player_name, epoch_count, match_id
+                    )
+                    if not is_dry_run:
+                        con.rollback()
+                        existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
+                        logging.warning("%s | epoch=%s | match_id=%s | rollback completed", player_name, epoch_count, match_id)
                 continue
 
             try:
@@ -428,12 +522,14 @@ def process_player(con, cursor, player_db):
                     logging.info("%s | epoch=%s | match_id=%s | dry run - would insert match participants", player_name, epoch_count, match_id)
                 else:
                     insert_match_participants(cursor, match_id, current_match)
-                    logging.info("%s | epoch=%s | match_id=%s | inserted match participants", player_name, epoch_count, match_id)
+                    con.commit()
+                    player_has_new_data = True
+                    logging.info("%s | epoch=%s | match_id=%s | committed match participants", player_name, epoch_count, match_id)
                 epoch_insert_count += 1
                 existing_match_ids.add(match_id)
             except Exception:
                 logging.exception(
-                    "%s | epoch=%s | match_id=%s | failed during DB insert",
+                    "%s | epoch=%s | match_id=%s | DB insert or commit failed",
                     player_name, epoch_count, match_id
                 )
                 if not is_dry_run:
@@ -441,31 +537,21 @@ def process_player(con, cursor, player_db):
                     existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
                     logging.warning("%s | epoch=%s | match_id=%s | rollback completed", player_name, epoch_count, match_id)
 
-        try:
-            if is_dry_run:
-                logging.info(
-                    "%s | dry run | epoch=%s would commit | inserted=%s | ghost=%s | skipped=%s",
-                    player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
-                )
-            else:
-                had_new_data = epoch_insert_count > 0 or epoch_ghost_count > 0
-                con.commit()
-                if had_new_data:
-                    invalidate_cache()
-                    warm_cache()
-                logging.info(
-                    "%s | epoch=%s committed | inserted=%s | ghost=%s | skipped=%s",
-                    player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
-                )
-        except Exception:
-            logging.exception("%s | epoch=%s | commit failed", player_name, epoch_count)
-            if not is_dry_run:
-                con.rollback()
-                existing_match_ids = get_existing_match_ids_for_player(cursor, player_puuid)
-                logging.warning("%s | epoch=%s | rollback completed", player_name, epoch_count)
+        if is_dry_run:
+            logging.info(
+                "%s | dry run | epoch=%s would commit per match | inserted=%s | ghost=%s | skipped=%s",
+                player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
+            )
+        else:
+            logging.info(
+                "%s | epoch=%s complete | committed_per_match_inserted=%s | committed_per_match_ghost=%s | skipped=%s",
+                player_name, epoch_count, epoch_insert_count, epoch_ghost_count, epoch_skip_count
+            )
 
     if matches_found:
         logging.info("Some duplicate matches for %s were skipped.", player_name)
+
+    return player_has_new_data
 
 
 # =========================
@@ -477,11 +563,14 @@ def main():
     with odbc.connect(conn_string) as con:
         cursor = con.cursor()
         logging.info("Connected to DB.")
+        log_db_connection(cursor)
         players_db = get_players(cursor)
+        any_new_data = False
 
         for player_db in players_db:
             try:
-                process_player(con, cursor, player_db)
+                player_had_new_data = process_player(con, cursor, player_db)
+                any_new_data = any_new_data or bool(player_had_new_data)
             except Exception:
                 logging.exception(
                     "Fatal error while processing player %s",
@@ -498,6 +587,12 @@ def main():
             logging.info("All active game modes have participant counts defined.")
 
     logging.info("All inserts done.")
+
+    if any_new_data:
+        invalidate_cache()
+        warm_cache()
+    else:
+        logging.info("No new match data committed; cache refresh skipped.")
 
 def run_forever():
     loop_interval_minutes = config.get("loop_interval_minutes", 15)
