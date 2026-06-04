@@ -1,6 +1,8 @@
 import { state, dom } from "./state.js";
 import { getOperatorOptions, OTHER_PLAYER_KEY } from "./filters.js";
 
+const INVERT_PLAYERS_KEY = "__INVERT_PLAYERS__";
+
 let sortChangedHandler = null;
 export function setSortChangedHandler(handler) {
   sortChangedHandler = typeof handler === "function" ? handler : null;
@@ -665,22 +667,48 @@ export function showColumnLoadError() {
   `;
 }
 
+function invertSelectedPlayers() {
+  const realPlayerPuuids = state.players
+    .map((player) => player.PUUID)
+    .filter((puuid) => puuid !== OTHER_PLAYER_KEY);
+
+  realPlayerPuuids.forEach((puuid) => {
+    if (state.selectedPlayers.has(puuid)) {
+      state.selectedPlayers.delete(puuid);
+    } else {
+      state.selectedPlayers.add(puuid);
+    }
+  });
+}
+
 export function renderPlayerOptions() {
-  dom.playerOptions.innerHTML = state.players.map((playerObj) => {
+  const playerOptions = [
+    ...state.players,
+    {
+      PLAYER: "Invert",
+      PUUID: INVERT_PLAYERS_KEY,
+      isInvertPlayer: true
+    }
+  ];
+
+  dom.playerOptions.innerHTML = playerOptions.map((playerObj) => {
     const playerName = playerObj.PLAYER;
     const puuid = playerObj.PUUID;
-    const isSelected = state.selectedPlayers.has(puuid);
+    const isInvertPlayer = puuid === INVERT_PLAYERS_KEY;
+    const isSelected = !isInvertPlayer && state.selectedPlayers.has(puuid);
     const isOtherPlayer = puuid === OTHER_PLAYER_KEY;
 
     return `
       <button
         type="button"
-        class="player-option ${isSelected ? "selected" : ""} ${isOtherPlayer ? "player-option-other" : ""}"
+        class="player-option ${isSelected ? "selected" : ""} ${isOtherPlayer ? "player-option-other" : ""} ${isInvertPlayer ? "player-option-invert" : ""}"
         data-player="${escapeHtml(playerName)}"
         data-puuid="${escapeHtml(puuid)}"
       >
         <span class="player-option-name">${escapeHtml(playerName)}</span>
-        <span class="player-option-check">✓</span>
+        <span class="player-option-check">
+          ${isInvertPlayer ? '<span class="material-symbols-outlined player-option-icon">flip</span>' : "✓"}
+        </span>
       </button>
     `;
   }).join("");
@@ -688,6 +716,12 @@ export function renderPlayerOptions() {
   dom.playerOptions.querySelectorAll(".player-option").forEach((btn) => {
     btn.addEventListener("click", () => {
       const puuid = btn.dataset.puuid;
+
+      if (puuid === INVERT_PLAYERS_KEY) {
+        invertSelectedPlayers();
+        renderPlayerOptions();
+        return;
+      }
 
       if (state.selectedPlayers.has(puuid)) {
         state.selectedPlayers.delete(puuid);

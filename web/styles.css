@@ -624,6 +624,11 @@ input::-webkit-calendar-picker-indicator {
   border-style: dashed;
 }
 
+.player-option-invert .player-option-check {
+  color: var(--muted);
+  border: none;
+}
+
 .player-option:hover {
   border-color: var(--border-hover);
   background: var(--surface-3);
@@ -667,6 +672,12 @@ input::-webkit-calendar-picker-indicator {
   background-color: rgba(79, 209, 197, 0.08);
   color: var(--accent);
   border-color: var(--accent);
+}
+
+.player-option-icon {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-size: 18px;
 }
 
 /* Results table */
