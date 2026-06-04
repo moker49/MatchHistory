@@ -74,9 +74,9 @@ root_logger.addHandler(console_handler)
 
 # Rotating file handler
 file_handler = RotatingFileHandler(
-    "matchhistory.log",
-    maxBytes=1_048_576,   # 1 MB
-    backupCount=1,        # keep 1 old log file, delete older ones
+    "logs/matchhistory.log",
+    maxBytes=1_048_576,
+    backupCount=3,
     encoding="utf-8"
 )
 file_handler.setFormatter(log_formatter)

@@ -88,9 +88,9 @@ console_handler.setFormatter(log_formatter)
 root_logger.addHandler(console_handler)
 
 file_handler = RotatingFileHandler(
-    "server.log",
+    "logs/server.log",
     maxBytes=1_048_576,
-    backupCount=1,
+    backupCount=3,
     encoding="utf-8"
 )
 file_handler.setFormatter(log_formatter)
@@ -102,9 +102,9 @@ wake_logger.propagate = False
 wake_logger.handlers.clear()
 
 wake_file_handler = RotatingFileHandler(
-    "wake.log",
+    "logs/wake.log",
     maxBytes=1_048_576,
-    backupCount=3,
+    backupCount=0,
     encoding="utf-8"
 )
 wake_file_handler.setFormatter(log_formatter)
