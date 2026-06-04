@@ -446,9 +446,14 @@ input::-webkit-calendar-picker-indicator {
 }
 
 .column-card.enabled .column-toggle-check {
-  background-color: rgba(79, 209, 197, 0.08);
-  color: var(--accent);
+  background: var(--accent);
   border-color: var(--accent);
+  color: var(--text-inverse);
+}
+
+.column-card.enabled .column-toggle-check .column-toggle-icon {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .column-type {
@@ -625,8 +630,14 @@ input::-webkit-calendar-picker-indicator {
 }
 
 .player-option-invert .player-option-check {
+  background: transparent;
+  border-color: transparent;
   color: var(--muted);
-  border: none;
+}
+
+.player-option-invert .player-option-check .player-option-icon {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .player-option:hover {
@@ -653,7 +664,7 @@ input::-webkit-calendar-picker-indicator {
   color: var(--text);
 }
 
-.player-option-check {
+.material-checkbox {
   width: 22px;
   height: 22px;
   min-width: 22px;
@@ -662,22 +673,30 @@ input::-webkit-calendar-picker-indicator {
   display: grid;
   place-items: center;
   color: transparent;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 900;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.material-checkbox .material-symbols-outlined {
+  font-family: 'Material Symbols Rounded';
+  font-size: 18px;
+  line-height: 1;
+  font-feature-settings: 'liga';
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  transition:
+    opacity var(--motion-fast) ease,
+    transform var(--motion-fast) var(--ease-soft);
 }
 
 .player-option.selected .player-option-check {
-  background-color: rgba(79, 209, 197, 0.08);
-  color: var(--accent);
+  background: var(--accent);
   border-color: var(--accent);
-}
-
-.player-option-icon {
-  font-family: 'Material Symbols Rounded';
-  font-weight: normal;
-  font-size: 18px;
+  color: var(--text-inverse);
 }
 
 /* Results table */
@@ -1220,6 +1239,8 @@ input[type="number"] {
   .add-filter-btn,
   .remove-filter-btn,
   .player-option,
+  .material-checkbox,
+  .material-checkbox .material-symbols-outlined,
   .number-btn {
     transition: none;
   }

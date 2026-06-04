@@ -706,8 +706,8 @@ export function renderPlayerOptions() {
         data-puuid="${escapeHtml(puuid)}"
       >
         <span class="player-option-name">${escapeHtml(playerName)}</span>
-        <span class="player-option-check">
-          ${isInvertPlayer ? '<span class="material-symbols-outlined player-option-icon">flip</span>' : "✓"}
+        <span class="material-checkbox player-option-check" aria-hidden="true">
+          <span class="material-symbols-outlined player-option-icon">${isInvertPlayer ? "flip" : "check"}</span>
         </span>
       </button>
     `;
@@ -750,7 +750,9 @@ export function renderColumnControls() {
       <div class="column-top">
         <label class="toggle">
           <input type="checkbox" class="column-toggle" ${column.default ? "checked" : ""} />
-          <span class="player-option-check column-toggle-check">✓</span>
+          <span class="material-checkbox column-toggle-check" aria-hidden="true">
+            <span class="material-symbols-outlined column-toggle-icon">check</span>
+          </span>
           <span class="toggle-label">${escapeHtml(column.label)}</span>
         </label>
         <span class="column-type">${escapeHtml(column.type)}</span>
