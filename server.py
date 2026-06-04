@@ -246,7 +246,7 @@ def normalize_search_request(search_request):
         "visible_columns": visible_columns,
         "filters": search_request.get("filters", []),
         "page": search_request.get("page", 1),
-        "page_size": search_request.get("page_size", 200),
+        "page_size": search_request.get("page_size", 50),
         "filter_mode": search_request.get("filter_mode", "all"),
         "sort_key": sort_key,
         "sort_direction": sort_direction if sort_key else None
