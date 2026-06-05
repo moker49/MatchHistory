@@ -950,9 +950,14 @@ export function formatCell(column, value) {
 
   const shortGameModes = {
     "Classic": "5v5",
+    "Doom Bots": "Doom",
+    "Hexakill": "6v6",
     "Nexus Blitz": "N.Blitz",
     "One for All": "OFA",
-    "Swiftplay": "Swift"
+    "Poro King": "Poro",
+    "Showdown": "2v2",
+    "Swiftplay": "Swift",
+    "TT: Hexakill": "TT:6v6",
   }
 
   if (isMobileTableCompact()) {
