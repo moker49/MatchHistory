@@ -681,6 +681,30 @@ function invertSelectedPlayers() {
   });
 }
 
+function setColumnControlEnabled(columnKey, enabled) {
+  const card = dom.columnsContainer?.querySelector(`.column-card[data-key="${columnKey}"]`);
+  const checkbox = card?.querySelector(".column-toggle");
+
+  if (!card || !checkbox) {
+    return;
+  }
+
+  checkbox.checked = enabled;
+  card.classList.toggle("enabled", enabled);
+
+  updateColumnFilterModeVisibility({
+    checkbox,
+    filtersWrap: card.querySelector(".filters-wrap"),
+    columnFilterMode: card.querySelector(".column-filter-mode"),
+    supportsColumnFilters: supportsFilters(state.allColumns.find((column) => column.key === columnKey))
+  });
+}
+
+function syncPlayerColumnWithSelection() {
+  const selectedPlayerCount = state.selectedPlayers.size;
+  setColumnControlEnabled("PLAYER", selectedPlayerCount !== 1);
+}
+
 export function renderPlayerOptions() {
   const playerOptions = [
     ...state.players,
@@ -719,6 +743,7 @@ export function renderPlayerOptions() {
 
       if (puuid === INVERT_PLAYERS_KEY) {
         invertSelectedPlayers();
+        syncPlayerColumnWithSelection();
         renderPlayerOptions();
         return;
       }
@@ -729,6 +754,7 @@ export function renderPlayerOptions() {
         state.selectedPlayers.add(puuid);
       }
 
+      syncPlayerColumnWithSelection();
       renderPlayerOptions();
     });
   });
